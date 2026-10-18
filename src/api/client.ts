@@ -29,15 +29,20 @@ export class ApiError extends Error {
 
 export function getAccessToken(): string | null {
   try {
-    return sessionStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+    return (
+      sessionStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) ??
+      localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN)
+    );
   } catch {
     return null;
   }
 }
 
 export function clearSession(): void {
-  sessionStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
-  sessionStorage.removeItem(STORAGE_KEYS.USER);
+  for (const store of [sessionStorage, localStorage]) {
+    store.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+    store.removeItem(STORAGE_KEYS.USER);
+  }
 }
 
 interface RequestOptions {

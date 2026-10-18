@@ -1,5 +1,6 @@
-import { LockOutlined, MailOutlined, UserOutlined } from '@ant-design/icons';
-import { App, Button, Form, Input, Typography } from 'antd';
+import { LockOutlined, MailOutlined } from '@ant-design/icons';
+import { App, Button, Checkbox, Form, Input, Typography } from 'antd';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ApiError } from '@/api/client';
 import { registerAPI } from '@/api/modules/auth.api';
@@ -14,6 +15,7 @@ interface AuthFormValues {
   username: string;
   email?: string;
   password: string;
+  remember?: boolean;
 }
 
 const errorMessage = (error: unknown) =>
@@ -22,15 +24,17 @@ const errorMessage = (error: unknown) =>
 export default function AuthCard({ mode }: AuthCardProps) {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
   const [form] = Form.useForm<AuthFormValues>();
+  const [submitting, setSubmitting] = useState(false);
   const isLogin = mode === 'login';
   const { settings } = useSettings();
 
   const submit = async (values: AuthFormValues) => {
+    setSubmitting(true);
     try {
       if (isLogin) {
-        await login(values.username, values.password);
+        await login(values.username, values.password, values.remember);
         void message.success('Signed in successfully.');
         void navigate(settings.landingPage);
       } else {
@@ -44,18 +48,20 @@ export default function AuthCard({ mode }: AuthCardProps) {
       }
     } catch (error) {
       void message.error(errorMessage(error));
+    } finally {
+      setSubmitting(false);
     }
   };
+
   return (
     <div className={isLogin ? 'login-page' : 'page-register'}>
       <div className="auth-page__header">
-        <img className="auth-logo" src={settings.logo} alt={settings.name} />
-        <Typography.Title level={2}>
+        <Typography.Title level={2} className="auth-form-title">
           {isLogin ? 'Welcome back' : 'Create an account'}
         </Typography.Title>
         <Typography.Paragraph type="secondary">
           {isLogin
-            ? 'Sign in with your Petpallets admin account.'
+            ? 'Sign in to the Petpallets admin console.'
             : 'Register a new account, then sign in.'}
         </Typography.Paragraph>
       </div>
@@ -64,13 +70,14 @@ export default function AuthCard({ mode }: AuthCardProps) {
         layout="vertical"
         onFinish={(values) => void submit(values)}
         requiredMark={false}
+        initialValues={{ remember: true }}
       >
         <Form.Item
           name="username"
-          label="Username"
+          label={isLogin ? 'Email / Username' : 'Username'}
           rules={[{ required: true, min: 3, message: 'Use at least 3 characters' }]}
         >
-          <Input prefix={<UserOutlined />} size="large" autoComplete="username" />
+          <Input size="large" autoComplete="username" placeholder="admin@petpallets.com" />
         </Form.Item>
         {!isLogin && (
           <Form.Item
@@ -90,16 +97,44 @@ export default function AuthCard({ mode }: AuthCardProps) {
             prefix={<LockOutlined />}
             size="large"
             autoComplete={isLogin ? 'current-password' : 'new-password'}
+            iconRender={(visible) => (visible ? 'Hide' : 'Show')}
           />
         </Form.Item>
-        <Button htmlType="submit" type="primary" size="large" block>
-          {isLogin ? 'Sign in' : 'Create account'}
+        {isLogin && (
+          <div className="auth-options">
+            <Form.Item name="remember" valuePropName="checked" noStyle>
+              <Checkbox>Keep me signed in</Checkbox>
+            </Form.Item>
+            <Button
+              type="link"
+              size="small"
+              className="auth-forgot"
+              onClick={() => {
+                void modal.info({
+                  title: 'Password reset',
+                  content:
+                    'Password resets are handled by a Petpallets administrator. Contact them to regain access.',
+                });
+              }}
+            >
+              Forgot password?
+            </Button>
+          </div>
+        )}
+        <Button htmlType="submit" type="primary" size="large" block loading={submitting}>
+          {isLogin ? 'Log in' : 'Create account'}
         </Button>
       </Form>
       <Typography.Paragraph className="auth-switch">
         {isLogin ? 'Need an account? ' : 'Already registered? '}
         <Link to={isLogin ? '/register' : '/login'}>{isLogin ? 'Register' : 'Sign in'}</Link>
       </Typography.Paragraph>
+      {isLogin && (
+        <p className="auth-audit">
+          © {new Date().getFullYear()} Petpallets · Authorized personnel only · Sign-ins are
+          audited
+        </p>
+      )}
     </div>
   );
 }

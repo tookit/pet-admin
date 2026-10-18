@@ -7,17 +7,22 @@ import type { ApiUser } from '@/types/api';
 
 interface AuthContextValue {
   user: ApiUser | null;
-  login: (username: string, password: string) => Promise<void>;
+  login: (username: string, password: string, remember?: boolean) => Promise<void>;
   logout: () => void;
   updateUser: (user: ApiUser) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+/** "Keep me signed in" writes to localStorage; otherwise the tab session owns it. */
+const authStorage = () =>
+  sessionStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) ? sessionStorage : localStorage;
+
 /** Session storage is user-writable, so treat its contents as untrusted. */
 function readStoredUser(): ApiUser | null {
   try {
-    const stored = sessionStorage.getItem(STORAGE_KEYS.USER);
+    const stored =
+      sessionStorage.getItem(STORAGE_KEYS.USER) ?? localStorage.getItem(STORAGE_KEYS.USER);
     return stored ? (JSON.parse(stored) as ApiUser) : null;
   } catch {
     clearSession();
@@ -28,12 +33,14 @@ function readStoredUser(): ApiUser | null {
 export function AuthProvider({ children }: PropsWithChildren) {
   const [user, setUser] = useState<ApiUser | null>(readStoredUser);
 
-  const login = useCallback(async (username: string, password: string) => {
+  const login = useCallback(async (username: string, password: string, remember = false) => {
     const { access_token } = await loginAPI({ username, password });
-    sessionStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, access_token);
+    const store = remember ? localStorage : sessionStorage;
+    clearSession();
+    store.setItem(STORAGE_KEYS.ACCESS_TOKEN, access_token);
     try {
       const nextUser = await getMeAPI();
-      sessionStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(nextUser));
+      store.setItem(STORAGE_KEYS.USER, JSON.stringify(nextUser));
       setUser(nextUser);
     } catch (error) {
       clearSession();
@@ -47,7 +54,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, []);
 
   const updateUser = useCallback((nextUser: ApiUser) => {
-    sessionStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(nextUser));
+    authStorage().setItem(STORAGE_KEYS.USER, JSON.stringify(nextUser));
     setUser(nextUser);
   }, []);
 

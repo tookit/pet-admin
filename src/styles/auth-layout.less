@@ -1,53 +1,102 @@
 .layout-auth {
-  min-height: 100vh;
-  background: var(--app-bg);
-}
-.auth-content {
   display: flex;
+  min-height: 100vh;
+  background: var(--app-surface);
+}
+.auth-brand {
+  display: flex;
+  flex: 0 0 55%;
+  flex-direction: column;
+  padding: 56px 48px;
+  background: linear-gradient(160deg, #45b095 0%, #286b5b 100%);
+  color: #fff;
+}
+.auth-brand__logo {
+  width: auto;
+  height: 64px;
+  margin-top: 8vh;
+  align-self: center;
+}
+.auth-brand__text {
+  margin-top: auto;
+}
+.auth-brand__text h2 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.auth-brand__text p {
+  max-width: 340px;
+  margin: 10px 0 0;
+  color: rgb(255 255 255 / 72%);
+}
+.auth-brand__text blockquote {
+  margin: 28px 0 0;
+  padding-left: 12px;
+  border-left: 2px solid rgb(255 255 255 / 30%);
+  color: rgb(255 255 255 / 55%);
+  font-size: 12.5px;
+}
+.auth-main {
+  display: flex;
+  flex: 1;
   justify-content: center;
   align-items: center;
-  padding: 40px 24px;
+  padding: 56px 64px;
+  background: var(--app-surface);
 }
 .auth-container {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   width: 100%;
-  max-width: 540px;
+  max-width: 560px;
 }
 .auth-form-container {
-  padding: 40px;
-  border-radius: 10px;
-  background: var(--app-surface);
-  box-shadow: 0 6px 16px rgb(0 0 0 / 8%);
-}
-.auth-footer {
-  padding: 24px 0;
-  background: transparent;
-  text-align: center;
-}
-.version-text {
-  color: var(--app-muted);
-  font-size: @font-size-sm;
+  width: 100%;
 }
 .login-page,
 .page-register {
-  max-width: 400px;
-  margin: 0 auto;
+  width: 100%;
 }
 .auth-page__header {
-  margin-bottom: 32px;
-  text-align: center;
+  margin-bottom: 24px;
+  text-align: left;
 }
-.auth-logo {
-  width: 48px;
-  height: 48px;
-  margin-bottom: 16px;
+.auth-form-title.ant-typography {
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 700;
+}
+.auth-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: -4px 0 20px;
+}
+.auth-forgot {
+  height: auto;
+  padding: 0;
+  font-size: 13px;
+}
+.auth-audit {
+  margin: 20px 0 0;
+  color: var(--app-muted);
+  font-size: 12px;
 }
 .auth-switch {
   margin: 24px 0 0 !important;
-  text-align: center;
+  text-align: left;
+}
+@media (max-width: 900px) {
+  .auth-brand {
+    display: none;
+  }
 }
 @media (max-width: 768px) {
-  .auth-form-container {
-    padding: 24px;
+  .auth-main {
+    padding: 32px 20px;
   }
   .ant-pro-page-container {
     margin: 0;

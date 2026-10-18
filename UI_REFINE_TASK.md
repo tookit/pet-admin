@@ -105,9 +105,9 @@
 
 ## R2 登录页
 
-- [ ] 双栏：左侧品牌渐变、64px logo、标题/副文案/引用块；右侧极简表单。
-- [ ] 表单：Welcome back、Username、Password（可切换显示）、Keep me signed in、Forgot password、通栏 40px 按钮、审计页脚。
-- 说明：pet-api 无密码重置接口，Forgot password 指向联系管理员的说明，不伪造重置流程；`Keep me signed in` 仅切换存储（sessionStorage → localStorage 需改 AuthContext，暂不做，复选框仅作为偏好展示）。
+- [x] 双栏：左侧品牌渐变、64px logo、标题/副文案/引用块；右侧极简表单。
+- [x] 表单：Welcome back、Username、Password（可切换显示）、Keep me signed in、Forgot password、通栏 40px 按钮、审计页脚。
+- 说明：pet-api 无密码重置接口，Forgot password 弹出联系管理员的说明，不伪造重置流程；`Keep me signed in` 已接入 AuthContext：勾选写 localStorage，未勾选写 sessionStorage，登出与 401 同时清理两者。
 
 ## R3 工作台
 
@@ -143,5 +143,6 @@
 ## 提交策略
 
 R1–R7 各自独立提交，前缀 `feat:` / `docs:`；不推送。
+
 
 
