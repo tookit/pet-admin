@@ -371,7 +371,7 @@ export default function QuoteList() {
                             {productName(item.product_id)}
                           </span>
                           <span className="inquiry-item-product__sku">
-                            {products[item.product_id]?.sku ?? `#${item.product_id}`}
+                            {products[item.product_id]?.sku ?? '—'} · ID {item.product_id}
                           </span>
                         </div>
                       </div>
