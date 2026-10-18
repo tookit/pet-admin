@@ -81,11 +81,11 @@
 
 ## T7 报价管理
 
-- [ ] `quote.api.ts`：`GET /quotes`、`GET /quotes/{id}`、`DELETE /quotes/{id}`
-- [ ] `Quotes` 页：列表（name/email/company 筛选）、详情抽屉、删除
-- [ ] 详情按 `product_id` 批量取商品名，缺商品时回退显示 ID
-- [ ] 路由与侧边栏注册
-- [ ] `pnpm type-check`、`pnpm lint`、`pnpm build` 通过
+- [x] `quote.api.ts`：`GET /quotes`、`GET /quotes/{id}`、`DELETE /quotes/{id}`
+- [x] `Quotes` 页：列表（name/email/company 筛选）、详情抽屉、删除
+- [x] 详情按 `product_id` 批量取商品名，缺商品时回退显示 ID
+- [x] 路由与侧边栏注册
+- [x] `pnpm type-check`、`pnpm lint`、`pnpm build` 通过
 
 ## T8 RBAC
 
@@ -104,4 +104,3 @@
 - [ ] `Attributes` 页：属性表格、创建/编辑、值管理
 - [ ] 路由与侧边栏注册
 - [ ] `pnpm type-check`、`pnpm lint`、`pnpm build` 通过
-

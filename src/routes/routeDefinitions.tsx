@@ -3,6 +3,7 @@ import {
   ApartmentOutlined,
   AppstoreOutlined,
   DashboardOutlined,
+  FileTextOutlined,
   IdcardOutlined,
   SafetyOutlined,
   SettingOutlined,
@@ -16,6 +17,7 @@ const DashboardPage = lazy(() => import('@/pages/dashboard/DashboardPage'));
 const ProductList = lazy(() => import('@/pages/catalog/ProductList'));
 const CategoryList = lazy(() => import('@/pages/catalog/CategoryList'));
 const TagList = lazy(() => import('@/pages/catalog/TagList'));
+const QuoteList = lazy(() => import('@/pages/quotes/QuoteList'));
 const UserList = lazy(() => import('@/pages/users/UserList'));
 const ProfilePage = lazy(() => import('@/pages/profile/ProfilePage'));
 const SecurityPage = lazy(() => import('@/pages/security/SecurityPage'));
@@ -28,6 +30,7 @@ export const protectedRoutes = [
   { path: 'products', name: 'Products', icon: <AppstoreOutlined />, component: ProductList },
   { path: 'categories', name: 'Categories', icon: <ApartmentOutlined />, component: CategoryList },
   { path: 'tags', name: 'Tags', icon: <TagsOutlined />, component: TagList },
+  { path: 'quotes', name: 'Quotes', icon: <FileTextOutlined />, component: QuoteList },
   { path: 'users', name: 'User Management', icon: <TeamOutlined />, component: UserList },
   { path: 'profile', name: 'Profile', icon: <IdcardOutlined />, component: ProfilePage },
   { path: 'security', name: 'Security', icon: <SafetyOutlined />, component: SecurityPage },

@@ -255,3 +255,34 @@ export interface PriceTierCreateParams {
   label?: string | null;
   display_order?: number;
 }
+
+export interface QuoteItem {
+  id: number;
+  quote_id: number;
+  product_id: number;
+  quantity: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ApiQuote {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  company: string;
+  notes: string | null;
+  ip_address: string | null;
+  created_at: string;
+  updated_at: string;
+  items: QuoteItem[];
+}
+
+export interface QuoteQueryParams {
+  current?: number;
+  pageSize?: number;
+  name?: string;
+  email?: string;
+  phone?: string;
+  company?: string;
+}
