@@ -15,7 +15,7 @@ import {
   ProTable,
   QueryFilter,
 } from '@ant-design/pro-components';
-import { App, Button, Card, Drawer, Empty, Form, Space } from 'antd';
+import { App, Button, Card, Checkbox, Drawer, Empty, Form, Modal, Space, Typography } from 'antd';
 import { useEffect, useState, type Key } from 'react';
 import {
   createUser,
@@ -26,12 +26,13 @@ import {
   type UserQueryParams,
   type UserStats,
 } from '@/api/modules/user.api';
+import { assignRoleToUser, getRoleList, removeRoleFromUser } from '@/api/modules/rbac.api';
 import { useProTable } from '@/hooks/useProTable';
 import { useSettings } from '@/contexts/SettingsContext';
 import MetricsRow from '@/components/MetricsRow';
 import { downloadCsv } from '@/utils/csv';
 import { displayName } from '@/utils/user';
-import type { ApiUser, UserUpdateParams } from '@/types/api';
+import type { ApiRole, ApiUser, UserUpdateParams } from '@/types/api';
 import { useUserTableColumns } from './UserColumn';
 import { GENDER_OPTIONS, STATUS_META, STATUS_OPTIONS } from './options';
 
@@ -76,6 +77,10 @@ export default function UserList() {
   const [params, setParams] = useState<UserQueryParams>({});
   const [selected, setSelected] = useState<Key[]>([]);
   const [busy, setBusy] = useState(false);
+  const [roleUser, setRoleUser] = useState<ApiUser>();
+  const [roles, setRoles] = useState<ApiRole[]>([]);
+  const [roleSelection, setRoleSelection] = useState<number[]>([]);
+  const [roleSaving, setRoleSaving] = useState(false);
   const { message, modal } = App.useApp();
   const { settings } = useSettings();
   const { actionRef, defaultProTableProps } = useProTable<ApiUser, UserQueryParams>({
@@ -139,10 +144,45 @@ export default function UserList() {
     setDrawerOpen(true);
   };
 
+  const openRoles = async (user: ApiUser) => {
+    setRoleUser(user);
+    setRoleSelection(user.roles.map((role) => role.id));
+    if (!roles.length) {
+      try {
+        const response = await getRoleList({ per_page: 100 });
+        setRoles(response.result);
+      } catch {
+        void message.error('Unable to load roles');
+      }
+    }
+  };
+
+  const saveRoles = async () => {
+    if (!roleUser) return;
+    setRoleSaving(true);
+    const current = roleUser.roles.map((role) => role.id);
+    const added = roleSelection.filter((id) => !current.includes(id));
+    const removed = current.filter((id) => !roleSelection.includes(id));
+    try {
+      await Promise.all([
+        ...added.map((id) => assignRoleToUser(roleUser.id, id)),
+        ...removed.map((id) => removeRoleFromUser(roleUser.id, id)),
+      ]);
+      await reload();
+      setRoleUser(undefined);
+      void message.success('Roles updated');
+    } catch {
+      void message.error('Unable to update roles');
+    } finally {
+      setRoleSaving(false);
+    }
+  };
+
   const columns = useUserTableColumns({
     onEdit: openEditor,
     onView: setViewing,
     onDelete: (id) => perform(() => deleteUser(id), 'User removed'),
+    onManageRoles: (user) => void openRoles(user),
   });
 
   const count = (value: number) => (stats.total ? Math.round((value / stats.total) * 100) : 0);
@@ -425,6 +465,28 @@ export default function UserList() {
           </Card>
         </Space>
       </Drawer>
+      <Modal
+        title={roleUser ? `Roles for ${displayName(roleUser)}` : 'Roles'}
+        open={!!roleUser}
+        confirmLoading={roleSaving}
+        okText="Save roles"
+        onCancel={() => setRoleUser(undefined)}
+        onOk={() => void saveRoles()}
+      >
+        <Typography.Paragraph type="secondary">
+          Assign any number of roles. Admins bypass permission checks in pet-api. The API has no
+          role delete endpoint.
+        </Typography.Paragraph>
+        <Checkbox.Group
+          style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+          value={roleSelection}
+          onChange={(values) => setRoleSelection(values)}
+          options={roles.map((role) => ({
+            value: role.id,
+            label: `${role.name} (${role.slug})`,
+          }))}
+        />
+      </Modal>
     </PageContainer>
   );
 }

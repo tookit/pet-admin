@@ -8,6 +8,22 @@ export interface Role {
   slug: string;
 }
 
+export interface ApiPermission {
+  id: number;
+  name: string;
+  slug: string;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ApiRole extends Role {
+  description: string | null;
+  permissions: ApiPermission[];
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ApiUser {
   id: number;
   username: string;

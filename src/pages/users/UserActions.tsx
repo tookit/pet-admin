@@ -8,9 +8,10 @@ interface Props {
   onEdit: (user: ApiUser) => void;
   onView: (user: ApiUser) => void;
   onDelete: (id: number) => Promise<void>;
+  onManageRoles: (user: ApiUser) => void;
 }
 
-export function UserActions({ record, onEdit, onView, onDelete }: Props) {
+export function UserActions({ record, onEdit, onView, onDelete, onManageRoles }: Props) {
   const { modal } = App.useApp();
   return (
     <Dropdown
@@ -19,6 +20,7 @@ export function UserActions({ record, onEdit, onView, onDelete }: Props) {
         items: [
           { key: 'view', label: 'View details', onClick: () => onView(record) },
           { key: 'edit', label: 'Edit', onClick: () => onEdit(record) },
+          { key: 'roles', label: 'Manage roles', onClick: () => onManageRoles(record) },
           { type: 'divider' },
           {
             key: 'delete',
