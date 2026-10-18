@@ -191,10 +191,13 @@ export default function ProductList() {
   const batchUpdateStatus = (status: ProductStatus) => {
     const ids = selectedKeys.map(Number);
     if (!ids.length) return;
-    void perform(async () => {
-      await Promise.all(ids.map((id) => updateProduct(id, { status })));
-      setSelectedKeys([]);
-    }, `${ids.length} product${ids.length > 1 ? 's' : ''} updated`);
+    void perform(
+      async () => {
+        await Promise.all(ids.map((id) => updateProduct(id, { status })));
+        setSelectedKeys([]);
+      },
+      `${ids.length} product${ids.length > 1 ? 's' : ''} updated`,
+    );
   };
 
   /** Export the filtered catalog (first 1,000 rows) as CSV. */
@@ -364,7 +367,10 @@ export default function ProductList() {
           <Typography.Text style={{ fontVariantNumeric: 'tabular-nums' }}>
             {product.min_price != null ? `From $${Number(product.min_price).toFixed(2)}` : '—'}
           </Typography.Text>
-          <Typography.Text type="secondary" style={{ fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>
+          <Typography.Text
+            type="secondary"
+            style={{ fontSize: 12, fontVariantNumeric: 'tabular-nums' }}
+          >
             {`MOQ ${product.moq}+`}
           </Typography.Text>
         </Space>

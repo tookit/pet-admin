@@ -131,8 +131,7 @@ export default function AuthCard({ mode }: AuthCardProps) {
       </Typography.Paragraph>
       {isLogin && (
         <p className="auth-audit">
-          © {new Date().getFullYear()} Petpallets · Authorized personnel only · Sign-ins are
-          audited
+          © {new Date().getFullYear()} Petpallets · Authorized personnel only · Sign-ins are audited
         </p>
       )}
     </div>

@@ -1,6 +1,6 @@
 # Ant Design Admin Boilerplate
 
-Vite + React 19 + Ant Design 5 admin starter with Pro Components. Authentication, users, profile, catalog, quotes, RBAC, media and attributes read from **pet-api**; dashboard and security stay mocked so the shell runs without the API for those screens.
+Vite + React 19 + Ant Design 5 admin starter with Pro Components, themed for Petpallets. Authentication, users, profile, catalog, inquiries, RBAC, media and attributes read from **pet-api**; only the Security screen still uses mock data.
 
 ![AdminPro dashboard](./output/playwright/adminpro-dashboard.png)
 
@@ -8,11 +8,11 @@ Vite + React 19 + Ant Design 5 admin starter with Pro Components. Authentication
 
 - Responsive ProLayout shell with sidebar, mixed, and top navigation modes.
 - Live template customizer for light/dark mode, preset or custom brand colors, and layout selection.
-- JWT login against pet-api, backed by `sessionStorage`.
+- JWT login against pet-api, stored in `sessionStorage` by default or `localStorage` with "Keep me signed in".
 - User management (list, search, create, edit, delete) backed by `/api/v1/users`.
 - Profile editing backed by `/api/v1/me`.
-- Products, categories, tags, quotes, roles/permissions, media and attributes backed by pet-api.
-- Dashboard metrics and security flows still use deterministic mock data.
+- Products, categories, tags, inquiries, roles/permissions, media and attributes backed by pet-api.
+- Dashboard KPIs and the 30-day inquiry chart are computed from `/quotes` and `/products`; Security flows still use mock data.
 
 ## Requirements
 
@@ -75,7 +75,7 @@ config without deploying, run `pnpm exec wrangler deploy --dry-run`.
 ### Data flows in three layers
 
 1. `src/api/client.ts` — the only module that touches `fetch`. It adds the Bearer token, serializes query params, parses the unified `ErrorResponse`, and clears the session on 401.
-2. `src/api/modules/*.api.ts` — typed adapters: `auth.api.ts`, `user.api.ts`, `profile.api.ts`, `product.api.ts`, `category.api.ts`, `tag.api.ts`, `quote.api.ts`, `rbac.api.ts`, `media.api.ts` and `attribute.api.ts` call pet-api; `dashboard.api.ts` and `security.api.ts` still call `src/mocks/api.ts`.
+2. `src/api/modules/*.api.ts` — typed adapters: `auth.api.ts`, `user.api.ts`, `profile.api.ts`, `product.api.ts`, `category.api.ts`, `tag.api.ts`, `quote.api.ts`, `rbac.api.ts`, `media.api.ts`, `attribute.api.ts` and `dashboard.api.ts` call pet-api; only `security.api.ts` still calls `src/mocks/api.ts`.
 3. Pages — import from `@/api/modules/*`, never from the mock or the client directly.
 
 `user.api.ts` keeps the `PaginatedResponse<T>` contract and maps ProTable's `current/pageSize` to the API's `page/per_page`, so `useProTable` stays unchanged.
@@ -88,13 +88,13 @@ Paths are relative (`users`, not `/users`) because they nest under a layout rout
 
 ### Auth uses a real JWT
 
-`src/contexts/AuthContext.tsx` stores `access_token` and the `ApiUser` from `GET /me` in `sessionStorage`. Login posts `{ username, password }` to `/login`, saves the token, then fetches the profile. Logout and any 401 clear both keys. `UserName` in the header is `firstname + lastname`, falling back to `username`.
+`src/contexts/AuthContext.tsx` stores `access_token` and the `ApiUser` from `GET /me` in `sessionStorage`, or in `localStorage` when the login form's "Keep me signed in" is checked. Login posts `{ username, password }` to `/login`, saves the token, then fetches the profile. Logout and any 401 clear both stores. `UserName` in the header is `firstname + lastname`, falling back to `username`.
 
 API user fields differ from the boilerplate's original demo shape: `username`, `firstname`, `lastname`, `roles[]`, and numeric `status` (`0` inactive, `1` active, `2` frozen). The user page uses those fields directly.
 
 ### Screens
 
-Dashboard, User Management, Profile, Security and Settings are implemented. The pet-api surfaces add Products, Categories, Tags, Quotes, Access Control, Media and Attributes. `Role Management` and `Permission` are covered by the Access Control page (roles, permissions and assignment); pet-api has no role edit or delete endpoint.
+The shell groups navigation as Operations (Dashboard, Inquiries), Catalog (Products, Categories, Tags, Media, Attributes) and System (Access Control, User Management, Profile, Security, Settings). Dashboard, User Management, Profile, Security and Settings are implemented; the pet-api surfaces add Products, Categories, Tags, Inquiries, Access Control, Media and Attributes. `Role Management` and `Permission` are covered by the Access Control page (roles, permissions and assignment); pet-api has no role edit or delete endpoint.
 
 ### Local state, and what is deliberately not wired
 
@@ -108,9 +108,9 @@ Profile data now comes from pet-api. Company, job title, location, social links 
 
 ### Charts
 
-The dashboard plots revenue and orders over the selected range, plus traffic by source. The numbers come from a seeded two-year series in `src/mocks/api.ts`, so the KPIs (and their change against the previous equal-length window) are computed rather than hardcoded, and reloading does not reshuffle them.
+The dashboard plots daily inquiry volume for the last 30 days, computed from `/quotes`; the KPI tiles use the same records plus `/products` stats. Because `/quotes` has no date filter, `src/api/modules/dashboard.api.ts` pages through up to 1,000 records before bucketing locally — raise `MAX_PAGES` when volume outgrows that.
 
-Charts use `@ant-design/plots`. Each one is a small component in `src/pages/dashboard/` that owns its mark spec, and every chart is paired with `ChartDataTable` — a `.sr-only` table holding the same numbers, because a tooltip must never be the only way to read a value. Colours come from `CHART_TOKENS` in `src/constants/app.ts`: the area chart plots one measure, so it uses the single brand hue; the donut encodes identity, so it uses `CHART_TOKENS.categorical`, a fixed six-hue order validated for colour-vision separation against both card surfaces. Assign those hues in order and never cycle them.
+Charts use `@ant-design/plots`. Each one is a small component in `src/pages/dashboard/` that owns its mark spec, and every chart is paired with `ChartDataTable` — a `.sr-only` table holding the same numbers, because a tooltip must never be the only way to read a value. Colours come from `CHART_TOKENS` in `src/constants/app.ts`: the trend plots one measure, so it uses the single brand hue. `CHART_TOKENS.categorical` remains for charts whose colour is identity, but no current chart uses it.
 
 Entry animation is off. It is decorative, and G2 does not honour `prefers-reduced-motion`.
 
@@ -137,7 +137,9 @@ ESLint runs typescript-eslint's type-checked rules, so floating promises, misuse
 
 - No test runner and no CI configuration.
 - No error boundary — an unexpected render error blanks the page.
-- Dashboard and Security are still mock data; their user counts are placeholders, not pet-api totals.
+- Security is still mock data; its devices, sessions and login history are placeholders.
+- Inquiries have no status, country or reply endpoint in pet-api, so the list has no status tabs or reply/quote actions; no status timeline appears in the drawer.
+- The media library groups by `aggregate_type`; pet-api has no folders, usage references or rename endpoint, so folder creation and usage tags are absent.
 - Role assignment is wired from User Management, but user status changes and role edit/delete have no pet-api endpoint.
 - Product variants and props are displayed read-only; only price tiers and images are edited here.
 - Media URLs are root-relative; the preview resolves them against `VITE_API_BASE_URL`'s origin, so pet-api (or the proxy in front of it) must serve `/local/...`.

@@ -68,7 +68,8 @@ export default function DashboardPage() {
             trend: {
               text: change == null ? '—' : `${change > 0 ? '+' : ''}${change.toFixed(1)}%`,
               caption: 'vs yesterday',
-              direction: change == null ? 'flat' : change > 0.5 ? 'up' : change < -0.5 ? 'down' : 'flat',
+              direction:
+                change == null ? 'flat' : change > 0.5 ? 'up' : change < -0.5 ? 'down' : 'flat',
             },
           };
         })(),
@@ -96,7 +97,8 @@ export default function DashboardPage() {
             trend: {
               text: change == null ? '—' : `${change > 0 ? '+' : ''}${change.toFixed(1)}%`,
               caption: 'vs last month',
-              direction: change == null ? 'flat' : change > 0.5 ? 'up' : change < -0.5 ? 'down' : 'flat',
+              direction:
+                change == null ? 'flat' : change > 0.5 ? 'up' : change < -0.5 ? 'down' : 'flat',
             },
           };
         })(),
@@ -113,7 +115,8 @@ export default function DashboardPage() {
           <span>
             There are <b style={{ color: 'var(--app-warning)' }}>{kpis.draftProducts} products</b>{' '}
             awaiting review and{' '}
-            <b style={{ color: 'var(--app-warning)' }}>{kpis.inquiriesToday} new inquiries</b> today.
+            <b style={{ color: 'var(--app-warning)' }}>{kpis.inquiriesToday} new inquiries</b>{' '}
+            today.
           </span>
         ) : (
           'Loading overview…'
@@ -174,7 +177,12 @@ export default function DashboardPage() {
               <List<TodoItem>
                 dataSource={data.todos}
                 locale={{
-                  emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Nothing pending — you're all caught up." />,
+                  emptyText: (
+                    <Empty
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      description="Nothing pending — you're all caught up."
+                    />
+                  ),
                 }}
                 renderItem={(item) => (
                   <List.Item

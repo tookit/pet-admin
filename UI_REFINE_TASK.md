@@ -77,6 +77,8 @@
 - [x] 桌面 / 平板 / 移动端检查核心流程；更新 README 与 CLAUDE.md。
 - 说明：`/` 现在跳 `settings.landingPage`，不再写死 `/dashboard`。响应式靠栅格断点与 `scroll={{ x }}` 保证，未做真机/浏览器截图验证（本会话 chrome-devtools MCP 连接失败，见下方验证记录）。
 
+说明：`design/` 为外部设计输入，加入 `.prettierignore`，避免格式化改写规格文档；源码与任务清单均通过 Prettier 检查。
+
 ## 提交策略
 
 每个任务独立提交，以 `feat:` / `fix:` / `docs:` 为前缀。各阶段提交前检查实际 diff，完成后更新此列表；不推送远端。
@@ -137,16 +139,12 @@
 
 ## R7 文档与校验
 
-- [ ] 更新 README / CLAUDE.md / AGENTS.md 中的页面说明。
-- [ ] `pnpm type-check`、`pnpm lint`、`pnpm format:check`、`pnpm build` 通过。
+- [x] 更新 README / CLAUDE.md / AGENTS.md 中的页面说明。
+- [x] `pnpm type-check`、`pnpm lint`、`pnpm format:check`、`pnpm build` 通过。
+
+说明：`design/` 为外部设计输入，加入 `.prettierignore`，避免格式化改写规格文档；源码与任务清单均通过 Prettier 检查。
 
 ## 提交策略
 
 R1–R7 各自独立提交，前缀 `feat:` / `docs:`；不推送。
-
-
-
-
-
-
 

@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-This is a React 19, TypeScript, Vite, and Ant Design admin starter. Auth, users, profile, products, categories, tags, quotes, RBAC, media and attributes call pet-api; Dashboard and Security still use in-memory mock data.
+This is a React 19, TypeScript, Vite, and Ant Design admin console themed for Petpallets. Auth, users, profile, products, categories, tags, inquiries, RBAC, media, attributes and the dashboard call pet-api; Security still uses in-memory mock data.
 
 - `src/pages/` groups screens and related components by feature; `src/layouts/` contains auth and admin shells.
 - `src/routes/routeDefinitions.tsx` defines routes and sidebar metadata. Use relative paths such as `users`.
@@ -35,7 +35,7 @@ No test runner, test naming convention, coverage threshold, or CI workflow is co
 
 ## Commit & Pull Request Guidelines
 
-Follow the existing type-prefixed style, for example `feat: rebuild the dashboard against the design spec` or `fix: refresh users after deletion`. Keep changes focused, and commit one item of `UI_REFINE_TASK.md` at a time. PRs should describe behavior, reference relevant issues, list verification performed, and include screenshots for visual changes.
+Follow the existing type-prefixed style, for example `feat: rebuild the dashboard against the design spec` or `fix: refresh users after deletion`. Keep changes focused, and commit one item of `UI_REFINE_TASK.md` (T# or R#) at a time. PRs should describe behavior, reference relevant issues, list verification performed, and include screenshots for visual changes.
 
 ## Security & Configuration
 

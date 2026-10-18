@@ -22,11 +22,11 @@ pnpm is the package manager (`packageManager` field pins the version; `pnpm-lock
 
 ## Current work
 
-`UI_REFINE_TASK.md` is the task ledger (Chinese): T1–T9, checkbox per task, with the scope rules and the verification list for each phase. All nine are checked off; each carries a 说明 note where the implementation departs from the literal spec. `design/adminpro-design-docs/*.md` (dashboard, user-management, settings, profile, security, design) plus `design/*.png` are the specs those tasks implement; `PRODUCT.md` holds audience, brand personality, anti-references, and accessibility requirements. Read both before building UI. Work is committed one task at a time with a `feat:` / `fix:` / `docs:` prefix and is not pushed.
+`UI_REFINE_TASK.md` is the task ledger (Chinese): T1–T9 (first build-out) and R1–R7 (redesign against the refreshed specs), checkbox per task, with the scope rules and the verification list for each phase. Each carries a 说明 note where the implementation departs from the literal spec. `design/adminpro-design-docs/*.md` (design, dashboard, product-list, inquiry, media, login, user-management, settings, profile, security) plus `design/*.png` are the specs; `PRODUCT.md` holds audience, brand personality, anti-references, and accessibility requirements. Read both before building UI. Work is committed one task at a time with a `feat:` / `fix:` / `docs:` prefix and is not pushed.
 
-Built: Dashboard, User management, Profile, Security, Settings, and the shared shell/branding. `Role Management` and `Permission` appear in the design but have no spec, so no routes were created for them. Nothing has been verified in a real browser — automated checks only.
+Built: Operations (Dashboard, Inquiries), Catalog (Products, Categories, Tags, Media, Attributes), and System (Access Control, User Management, Profile, Security, Settings), plus the shared shell/branding and split-screen login. Nothing has been verified in a real browser — automated checks only.
 
-API integration is tracked in `tasks.md` (T1–T9): auth, user management, profile, products, categories, tags, quotes, RBAC, media and attributes now call pet-api; Dashboard and Security remain mocked.
+API integration is tracked in `tasks.md` (T1–T9): auth, user management, profile, products, categories, tags, inquiries, RBAC, media, attributes and the dashboard now call pet-api; only Security remains mocked.
 
 `AGENTS.md` restates this file for other agents; keep the overlapping parts in sync.
 
@@ -35,7 +35,7 @@ API integration is tracked in `tasks.md` (T1–T9): auth, user management, profi
 ### Data flows in three layers
 
 1. `src/api/client.ts` — the only module using `fetch`. Adds the Bearer token from `STORAGE_KEYS.ACCESS_TOKEN`, serializes query params, throws `ApiError` for the unified pet-api error shape, and clears the session + redirects on 401.
-2. `src/api/modules/*.api.ts` — typed adapters. `auth.api.ts`, `user.api.ts`, `profile.api.ts`, `product.api.ts`, `category.api.ts`, `tag.api.ts`, `quote.api.ts`, `rbac.api.ts`, `media.api.ts` and `attribute.api.ts` hit pet-api; `dashboard.api.ts` and `security.api.ts` still call `src/mocks/api.ts`. List adapters map ProTable's `current/pageSize` to the API's `page/per_page`.
+2. `src/api/modules/*.api.ts` — typed adapters. `auth.api.ts`, `user.api.ts`, `profile.api.ts`, `product.api.ts`, `category.api.ts`, `tag.api.ts`, `quote.api.ts`, `rbac.api.ts`, `media.api.ts`, `attribute.api.ts` and `dashboard.api.ts` hit pet-api; only `security.api.ts` still calls `src/mocks/api.ts`. List adapters map ProTable's `current/pageSize` to the API's `page/per_page`.
 3. Pages — import from `@/api/modules/*`, never from `@/mocks/api` or `@/api/client`.
 
 API types live in `src/types/api.ts` (`ApiUser`, `Role`, `TokenResponse`, `UserUpdateParams`); UI-only types stay in `src/types/index.ts`. The user page uses the API shape directly: `username`, `firstname`, `lastname`, `roles[]`, numeric `status` (`0` inactive, `1` active, `2` frozen).
@@ -50,7 +50,7 @@ Adding a page = add one entry to `routeDefinitions.tsx`. Paths are relative (`'u
 
 ### Auth is real; settings are local preferences
 
-`src/contexts/AuthContext.tsx` stores `access_token` and the `ApiUser` from `GET /me` in **`sessionStorage`**, reading the user synchronously via a lazy `useState` initializer. `login(username, password)` posts to `/login`, saves the token, then calls `/me`; failure clears both keys. `updateUser` keeps the context in sync after a profile save. `sessionStorage` is user-writable, so `readStoredUser` parses defensively. Redirects on 401 are owned by `src/api/client.ts`.
+`src/contexts/AuthContext.tsx` stores `access_token` and the `ApiUser` from `GET /me` in **`sessionStorage`**, or in **`localStorage`** when the login form's "Keep me signed in" is checked, reading the user synchronously via a lazy `useState` initializer. `login(username, password, remember?)` posts to `/login`, saves the token, then calls `/me`; failure clears both stores. `updateUser` keeps the context in sync after a profile save. Both stores are user-writable, so `readStoredUser` parses defensively. Redirects on 401 are owned by `src/api/client.ts`.
 
 `src/contexts/SettingsContext.tsx` is still browser-local and behaves differently on purpose: it keeps `settings` (what the UI renders) and `saved` (what is persisted) apart, so a settings screen can `preview()` live, then `save()` or `cancel()`. It persists to **`localStorage`** through `readPreferences` in `src/utils/storage.ts`, which copies only keys present in `DEFAULT_SETTINGS` **and** matching the default's `typeof` — a new setting needs an entry in `DEFAULT_SETTINGS` or it will be silently dropped on reload. `DEFAULT_SETTINGS` is seeded from `APP_CONFIG`, so `App.tsx` sets `document.title` from it.
 
@@ -92,7 +92,7 @@ Rules the existing charts follow, and new ones should too:
 - **Every chart ships a `ChartDataTable`.** It renders the same numbers as an `.sr-only` table (class in `global.less`), so no value is reachable only by hovering.
 - **Spread `NO_ENTRY_ANIMATION` into every plot.** The entry animation is decorative, and G2 ignores `prefers-reduced-motion`. It has to be spread from a variable rather than written as a prop — see the comment on the constant.
 - **Labels go outside the mark.** A label at `position: 'top'` lands _on_ the bar's top edge and renders dark gray over the fill; `dy: -18` lifts it clear. Watch for this on any new labelled chart.
-- Chart data comes from the seeded two-year series (`buildDaily`) in `src/mocks/api.ts`, so the KPIs and the charts are computed from one source and reloading does not reshuffle them. Do not reintroduce a hardcoded percentage.
+- Chart data comes from pet-api: `dashboard.api.ts` pages through `/quotes` (capped by `MAX_PAGES`) and reads `/products` stats, then buckets locally. Do not reintroduce a hardcoded percentage or mock series.
 - **The donut is the exception to "one measure = one hue".** Traffic sources encode identity, so `TrafficSources.tsx` uses `CHART_TOKENS.categorical` — a fixed six-hue order, validated for colour-vision separation against both card surfaces. Assign the hues in order and never cycle them: a seventh source folds into "Other" rather than borrowing a hue.
 
 `height` on a plot includes the axis band — do not add a height that assumes the axis lives outside it, and do not give the card a fixed height that clips it.
@@ -108,7 +108,9 @@ Rules the existing charts follow, and new ones should too:
 ## Known gaps
 
 - No error boundary — an unexpected render error blanks the page.
-- The mock `users` array is gone; Dashboard still shows placeholder user counts, not pet-api totals.
+- Security is still mock data (devices, sessions, login history).
+- Inquiries have no status/country/reply/timeline fields in pet-api, so the list has no status tabs and the drawer has no reply, quote or timeline blocks.
+- The media library groups by `aggregate_type`; pet-api has no folders, usage references or rename endpoint, so folder creation and usage tags are absent.
 - Role assignment is wired from User Management (`/rbac/users/{id}/roles/{role_id}`); pet-api has no role edit/delete endpoint, and no endpoint changes a user's status.
 - Products edit price tiers and attached images only; variants and props are read-only. Category parent changes must go through `POST /categories/{id}/move`, not `PUT`.
 - Media previews resolve root-relative pet-api URLs against the API origin (`mediaUrl` in `media.api.ts`); pet-api or its proxy must serve `/local/...`.
