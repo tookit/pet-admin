@@ -1,6 +1,6 @@
 # Ant Design Admin Boilerplate
 
-Vite + React 19 + Ant Design 5 admin starter with Pro Components. Authentication, user management and profile read from **pet-api**; dashboard and security stay mocked so the shell runs without the API for those screens.
+Vite + React 19 + Ant Design 5 admin starter with Pro Components. Authentication, users, profile, catalog, quotes, RBAC, media and attributes read from **pet-api**; dashboard and security stay mocked so the shell runs without the API for those screens.
 
 ![AdminPro dashboard](./output/playwright/adminpro-dashboard.png)
 
@@ -11,6 +11,7 @@ Vite + React 19 + Ant Design 5 admin starter with Pro Components. Authentication
 - JWT login against pet-api, backed by `sessionStorage`.
 - User management (list, search, create, edit, delete) backed by `/api/v1/users`.
 - Profile editing backed by `/api/v1/me`.
+- Products, categories, tags, quotes, roles/permissions, media and attributes backed by pet-api.
 - Dashboard metrics and security flows still use deterministic mock data.
 
 ## Requirements
@@ -50,7 +51,7 @@ Sign in with a real pet-api account. The default `.env.example` points at
 ### Data flows in three layers
 
 1. `src/api/client.ts` — the only module that touches `fetch`. It adds the Bearer token, serializes query params, parses the unified `ErrorResponse`, and clears the session on 401.
-2. `src/api/modules/*.api.ts` — typed adapters: `auth.api.ts`, `user.api.ts`, `profile.api.ts` call pet-api; `dashboard.api.ts` and `security.api.ts` still call `src/mocks/api.ts`.
+2. `src/api/modules/*.api.ts` — typed adapters: `auth.api.ts`, `user.api.ts`, `profile.api.ts`, `product.api.ts`, `category.api.ts`, `tag.api.ts`, `quote.api.ts`, `rbac.api.ts`, `media.api.ts` and `attribute.api.ts` call pet-api; `dashboard.api.ts` and `security.api.ts` still call `src/mocks/api.ts`.
 3. Pages — import from `@/api/modules/*`, never from the mock or the client directly.
 
 `user.api.ts` keeps the `PaginatedResponse<T>` contract and maps ProTable's `current/pageSize` to the API's `page/per_page`, so `useProTable` stays unchanged.
@@ -69,7 +70,7 @@ API user fields differ from the boilerplate's original demo shape: `username`, `
 
 ### Screens
 
-Dashboard, User Management, Profile, Security and Settings are implemented. `Role Management` and `Permission` appear in the design but have no spec and no route — they were left out rather than shipped as empty pages.
+Dashboard, User Management, Profile, Security and Settings are implemented. The pet-api surfaces add Products, Categories, Tags, Quotes, Access Control, Media and Attributes. `Role Management` and `Permission` are covered by the Access Control page (roles, permissions and assignment); pet-api has no role edit or delete endpoint.
 
 ### Local state, and what is deliberately not wired
 
@@ -113,4 +114,6 @@ ESLint runs typescript-eslint's type-checked rules, so floating promises, misuse
 - No test runner and no CI configuration.
 - No error boundary — an unexpected render error blanks the page.
 - Dashboard and Security are still mock data; their user counts are placeholders, not pet-api totals.
-- Role assignment and user status changes are not exposed by the pet-api endpoints this UI calls.
+- Role assignment is wired from User Management, but user status changes and role edit/delete have no pet-api endpoint.
+- Product variants and props are displayed read-only; only price tiers and images are edited here.
+- Media URLs are root-relative; the preview resolves them against `VITE_API_BASE_URL`'s origin, so pet-api (or the proxy in front of it) must serve `/local/...`.

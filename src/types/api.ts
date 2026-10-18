@@ -302,3 +302,88 @@ export interface QuoteQueryParams {
   phone?: string;
   company?: string;
 }
+
+export type MediaAggregateType = 'image' | 'video' | 'audio' | 'document' | 'archive' | 'other';
+
+export interface ApiMedia {
+  id: number;
+  uuid: string;
+  filename: string;
+  directory: string;
+  disk: string;
+  extension: string;
+  mime_type: string;
+  aggregate_type: MediaAggregateType;
+  size: number;
+  fingerprint: string | null;
+  custom_properties: Record<string, unknown> | null;
+  cloud_url: string | null;
+  url: string;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface MediaUploadResponse {
+  media: ApiMedia;
+  message: string;
+}
+
+export interface EntityMediaGroup {
+  tag: string;
+  media: ApiMedia[];
+}
+
+export interface MediaQueryParams {
+  current?: number;
+  pageSize?: number;
+  aggregate_type?: MediaAggregateType;
+  filename?: string;
+}
+
+export type AttributeType = 'text' | 'number' | 'select' | 'boolean' | 'date';
+
+export interface AttributeValue {
+  id: number;
+  attribute_id: number;
+  value: string;
+  alias: string | null;
+  display_order: number;
+  created_at: string | null;
+}
+
+export interface ApiAttribute {
+  id: number;
+  name: string;
+  slug: string;
+  type: AttributeType;
+  unit: string | null;
+  filterable: boolean;
+  is_required: boolean;
+  display_order: number;
+  values: AttributeValue[];
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface AttributeValueCreateParams {
+  value: string;
+  alias?: string | null;
+  display_order?: number;
+}
+
+export interface AttributeCreateParams {
+  name: string;
+  slug: string;
+  type: AttributeType;
+  unit?: string | null;
+  filterable?: boolean;
+  is_required?: boolean;
+  display_order?: number;
+  values?: AttributeValueCreateParams[];
+}
+
+export type AttributeUpdateParams = Partial<Omit<AttributeCreateParams, 'values'>>;
+
+export interface AttributeQueryParams extends ListParams {
+  filterable_only?: boolean;
+}

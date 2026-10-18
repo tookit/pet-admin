@@ -25,7 +25,7 @@ pnpm is the package manager (`packageManager` field pins the version; `pnpm-lock
 
 Built: Dashboard, User management, Profile, Security, Settings, and the shared shell/branding. `Role Management` and `Permission` appear in the design but have no spec, so no routes were created for them. Nothing has been verified in a real browser — automated checks only.
 
-API integration is tracked in `tasks.md` (T1–T5): auth, user management and profile now call pet-api; Dashboard and Security remain mocked.
+API integration is tracked in `tasks.md` (T1–T9): auth, user management, profile, products, categories, tags, quotes, RBAC, media and attributes now call pet-api; Dashboard and Security remain mocked.
 
 `AGENTS.md` restates this file for other agents; keep the overlapping parts in sync.
 
@@ -34,7 +34,7 @@ API integration is tracked in `tasks.md` (T1–T5): auth, user management and pr
 ### Data flows in three layers
 
 1. `src/api/client.ts` — the only module using `fetch`. Adds the Bearer token from `STORAGE_KEYS.ACCESS_TOKEN`, serializes query params, throws `ApiError` for the unified pet-api error shape, and clears the session + redirects on 401.
-2. `src/api/modules/*.api.ts` — typed adapters. `auth.api.ts`, `user.api.ts` and `profile.api.ts` hit pet-api; `dashboard.api.ts` and `security.api.ts` still call `src/mocks/api.ts`. `UserQueryParams` maps ProTable's `current/pageSize` to the API's `page/per_page`.
+2. `src/api/modules/*.api.ts` — typed adapters. `auth.api.ts`, `user.api.ts`, `profile.api.ts`, `product.api.ts`, `category.api.ts`, `tag.api.ts`, `quote.api.ts`, `rbac.api.ts`, `media.api.ts` and `attribute.api.ts` hit pet-api; `dashboard.api.ts` and `security.api.ts` still call `src/mocks/api.ts`. List adapters map ProTable's `current/pageSize` to the API's `page/per_page`.
 3. Pages — import from `@/api/modules/*`, never from `@/mocks/api` or `@/api/client`.
 
 API types live in `src/types/api.ts` (`ApiUser`, `Role`, `TokenResponse`, `UserUpdateParams`); UI-only types stay in `src/types/index.ts`. The user page uses the API shape directly: `username`, `firstname`, `lastname`, `roles[]`, numeric `status` (`0` inactive, `1` active, `2` frozen).
@@ -108,5 +108,7 @@ Rules the existing charts follow, and new ones should too:
 
 - No error boundary — an unexpected render error blanks the page.
 - The mock `users` array is gone; Dashboard still shows placeholder user counts, not pet-api totals.
-- Role assignment and status changes have no pet-api endpoint wired into this UI.
+- Role assignment is wired from User Management (`/rbac/users/{id}/roles/{role_id}`); pet-api has no role edit/delete endpoint, and no endpoint changes a user's status.
+- Products edit price tiers and attached images only; variants and props are read-only. Category parent changes must go through `POST /categories/{id}/move`, not `PUT`.
+- Media previews resolve root-relative pet-api URLs against the API origin (`mediaUrl` in `media.api.ts`); pet-api or its proxy must serve `/local/...`.
 - `pnpm type-check`, `pnpm lint` and `pnpm build` pass. The `chrome-devtools` MCP server fails to connect, so layout was checked with a throwaway Chrome DevTools Protocol script instead (headless Chrome on `:9222`, `Emulation.setDeviceMetricsOverride` + `Runtime.evaluate`): inner page width, the dashboard KPI tiles and the locale of both component libraries at 1440px and 375px. Dark mode, the tablet breakpoint and the charts' rendered output remain unchecked.

@@ -97,10 +97,11 @@
 
 ## T9 媒体与属性
 
-- [ ] `client.ts` 支持 `FormData` 上传（不手写 Content-Type）
-- [ ] `media.api.ts`：列表、上传、删除
-- [ ] `Media` 页：文件列表/筛选、上传、复制 URL、删除
-- [ ] `attribute.api.ts`：列表、CRUD、值增删
-- [ ] `Attributes` 页：属性表格、创建/编辑、值管理
-- [ ] 路由与侧边栏注册
-- [ ] `pnpm type-check`、`pnpm lint`、`pnpm build` 通过
+- [x] `client.ts` 支持 `FormData` 上传（不手写 Content-Type）
+- [x] `media.api.ts`：列表、上传、删除、实体附件、设置商品主图
+- [x] `Media` 页：文件列表/筛选、上传、复制 URL、删除
+- [x] 商品详情支持从媒体库附加图片并设置 featured
+- [x] `attribute.api.ts`：列表、CRUD、值增删
+- [x] `Attributes` 页：属性表格、创建/编辑、值管理
+- [x] 路由与侧边栏注册
+- [x] `pnpm type-check`、`pnpm lint`、`pnpm build` 通过

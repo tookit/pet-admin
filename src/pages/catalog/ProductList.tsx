@@ -7,6 +7,7 @@ import {
   DeleteOutlined,
   FileTextOutlined,
   InboxOutlined,
+  PictureOutlined,
   PlusOutlined,
   StarOutlined,
   StarFilled,
@@ -36,6 +37,7 @@ import {
   InputNumber,
   Modal,
   Popconfirm,
+  Select,
   Space,
   Table,
   Tag,
@@ -57,10 +59,17 @@ import {
 } from '@/api/modules/product.api';
 import { flattenCategories, getCategoryTree } from '@/api/modules/category.api';
 import { getTagList } from '@/api/modules/tag.api';
+import {
+  getMediaList,
+  mediaUrl,
+  setProductFeaturedImage,
+  syncEntityMedia,
+} from '@/api/modules/media.api';
 import { useProTable } from '@/hooks/useProTable';
 import { useSettings } from '@/contexts/SettingsContext';
 import MetricsRow from '@/components/MetricsRow';
 import type {
+  ApiMedia,
   ApiProduct,
   ApiProductDetail,
   PriceTier,
@@ -117,6 +126,10 @@ export default function ProductList() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [tiers, setTiers] = useState<PriceTier[]>([]);
   const [tierModalOpen, setTierModalOpen] = useState(false);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [imageOptions, setImageOptions] = useState<ApiMedia[]>([]);
+  const [imageSelection, setImageSelection] = useState<number[]>([]);
+  const [imageSaving, setImageSaving] = useState(false);
   const [stats, setStats] = useState<ProductStats>(EMPTY_STATS);
   const [params, setParams] = useState<ProductQueryParams>({});
   const [categoryOptions, setCategoryOptions] = useState<Array<{ value: number; label: string }>>(
@@ -216,6 +229,52 @@ export default function ProductList() {
     setTiers(await getPriceTiers(productId));
   };
 
+  const refreshDetail = async (productId: number) => {
+    const next = await getProduct(productId);
+    setDetail(next);
+    setTiers(next.tiers);
+  };
+
+  const openImages = async () => {
+    if (!detail) return;
+    setImageSelection(detail.images.map((image) => image.id));
+    setImageModalOpen(true);
+    if (!imageOptions.length) {
+      try {
+        const response = await getMediaList({ aggregate_type: 'image', pageSize: 100 });
+        setImageOptions(response.result);
+      } catch {
+        void message.error('Unable to load the media library');
+      }
+    }
+  };
+
+  const saveImages = async () => {
+    if (!detail) return;
+    setImageSaving(true);
+    try {
+      await syncEntityMedia('Product', detail.id, imageSelection);
+      await refreshDetail(detail.id);
+      setImageModalOpen(false);
+      void message.success('Product images updated');
+    } catch {
+      void message.error('Unable to update product images');
+    } finally {
+      setImageSaving(false);
+    }
+  };
+
+  const featureImage = async (mediaId: number) => {
+    if (!detail) return;
+    try {
+      await setProductFeaturedImage(detail.id, mediaId);
+      await refreshDetail(detail.id);
+      void message.success('Featured image updated');
+    } catch {
+      void message.error('Unable to set the featured image');
+    }
+  };
+
   const columns: ProColumns<ApiProduct>[] = [
     {
       title: 'Product',
@@ -223,7 +282,12 @@ export default function ProductList() {
       width: 300,
       render: (_: unknown, product: ApiProduct) => (
         <Space>
-          <Avatar shape="square" size={40} src={product.featured_image} icon={<InboxOutlined />} />
+          <Avatar
+            shape="square"
+            size={40}
+            src={mediaUrl(product.featured_image)}
+            icon={<InboxOutlined />}
+          />
           <Space direction="vertical" size={0}>
             <Space size={4}>
               <a onClick={() => void openDetail(product)}>{product.name}</a>
@@ -565,24 +629,42 @@ export default function ProductList() {
                 ]}
               />
             </Card>
-            <Card size="small" title="Images">
+            <Card
+              size="small"
+              title="Images"
+              extra={
+                <Button size="small" icon={<PictureOutlined />} onClick={() => void openImages()}>
+                  Manage
+                </Button>
+              }
+            >
               {detail.images.length ? (
                 <Image.PreviewGroup>
                   <Space wrap>
                     {detail.images.map((image) => (
-                      <Image
-                        key={image.id}
-                        width={104}
-                        height={104}
-                        src={image.url}
-                        style={{ objectFit: 'cover' }}
-                      />
+                      <Space key={image.id} direction="vertical" size={2} align="center">
+                        <Image
+                          width={104}
+                          height={104}
+                          src={mediaUrl(image.url)}
+                          style={{ objectFit: 'cover' }}
+                        />
+                        <Button
+                          size="small"
+                          type={image.featured ? 'primary' : 'text'}
+                          icon={image.featured ? <StarFilled /> : <StarOutlined />}
+                          aria-label={image.featured ? 'Featured image' : 'Set as featured'}
+                          onClick={() => void featureImage(image.id)}
+                        >
+                          {image.featured ? 'Featured' : 'Set featured'}
+                        </Button>
+                      </Space>
                     ))}
                   </Space>
                 </Image.PreviewGroup>
               ) : (
                 <Typography.Text type="secondary">
-                  No images attached. Use the Media page to upload and attach them.
+                  No images attached. Use Manage to attach files from the media library.
                 </Typography.Text>
               )}
             </Card>
@@ -693,6 +775,31 @@ export default function ProductList() {
             <Input placeholder="e.g. Pallet pricing" />
           </Form.Item>
         </Form>
+      </Modal>
+      <Modal
+        title="Product images"
+        open={imageModalOpen}
+        okText="Save images"
+        confirmLoading={imageSaving}
+        onCancel={() => setImageModalOpen(false)}
+        onOk={() => void saveImages()}
+      >
+        <Typography.Paragraph type="secondary">
+          Selection replaces the images attached to this product. Upload new files from the Media
+          page first.
+        </Typography.Paragraph>
+        <Select
+          mode="multiple"
+          style={{ width: '100%' }}
+          placeholder="Choose images"
+          value={imageSelection}
+          onChange={setImageSelection}
+          optionFilterProp="label"
+          options={imageOptions.map((media) => ({
+            value: media.id,
+            label: media.filename,
+          }))}
+        />
       </Modal>
     </PageContainer>
   );

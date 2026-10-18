@@ -5,6 +5,9 @@ const BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001/ap
   '',
 );
 
+/** Origin serving uploaded files; media URLs from pet-api are root-relative. */
+export const API_ORIGIN = BASE_URL.replace(/\/api\/v1$/, '');
+
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
@@ -40,6 +43,8 @@ export function clearSession(): void {
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
+  /** Multipart upload. When set, `body` is ignored and the browser sets Content-Type. */
+  formData?: FormData;
   params?: object;
   signal?: AbortSignal;
 }
@@ -64,7 +69,13 @@ function redirectToLogin(): void {
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const token = getAccessToken();
   const headers: Record<string, string> = { Accept: 'application/json' };
-  if (options.body !== undefined) headers['Content-Type'] = 'application/json';
+  let body: BodyInit | undefined;
+  if (options.formData) {
+    body = options.formData;
+  } else if (options.body !== undefined) {
+    headers['Content-Type'] = 'application/json';
+    body = JSON.stringify(options.body);
+  }
   if (token) headers.Authorization = `Bearer ${token}`;
 
   let response: Response;
@@ -72,7 +83,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     response = await fetch(buildUrl(path, options.params), {
       method: options.method ?? 'GET',
       headers,
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      body,
       signal: options.signal,
     });
   } catch (error) {

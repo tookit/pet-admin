@@ -2,8 +2,7 @@
 
 ## Project Structure & Module Organization
 
-This is a React 19, TypeScript, Vite, and Ant Design admin starter. Auth, user management
-and profile call pet-api; Dashboard and Security still use in-memory mock data.
+This is a React 19, TypeScript, Vite, and Ant Design admin starter. Auth, users, profile, products, categories, tags, quotes, RBAC, media and attributes call pet-api; Dashboard and Security still use in-memory mock data.
 
 - `src/pages/` groups screens and related components by feature; `src/layouts/` contains auth and admin shells.
 - `src/routes/routeDefinitions.tsx` defines routes and sidebar metadata. Use relative paths such as `users`.

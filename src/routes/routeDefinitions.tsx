@@ -5,9 +5,11 @@ import {
   DashboardOutlined,
   FileTextOutlined,
   IdcardOutlined,
+  PictureOutlined,
   SafetyCertificateOutlined,
   SafetyOutlined,
   SettingOutlined,
+  SlidersOutlined,
   TagsOutlined,
   TeamOutlined,
 } from '@ant-design/icons';
@@ -20,6 +22,8 @@ const CategoryList = lazy(() => import('@/pages/catalog/CategoryList'));
 const TagList = lazy(() => import('@/pages/catalog/TagList'));
 const QuoteList = lazy(() => import('@/pages/quotes/QuoteList'));
 const RoleList = lazy(() => import('@/pages/rbac/RoleList'));
+const MediaList = lazy(() => import('@/pages/media/MediaList'));
+const AttributeList = lazy(() => import('@/pages/attributes/AttributeList'));
 const UserList = lazy(() => import('@/pages/users/UserList'));
 const ProfilePage = lazy(() => import('@/pages/profile/ProfilePage'));
 const SecurityPage = lazy(() => import('@/pages/security/SecurityPage'));
@@ -38,6 +42,13 @@ export const protectedRoutes = [
     name: 'Access Control',
     icon: <SafetyCertificateOutlined />,
     component: RoleList,
+  },
+  { path: 'media', name: 'Media', icon: <PictureOutlined />, component: MediaList },
+  {
+    path: 'attributes',
+    name: 'Attributes',
+    icon: <SlidersOutlined />,
+    component: AttributeList,
   },
   { path: 'users', name: 'User Management', icon: <TeamOutlined />, component: UserList },
   { path: 'profile', name: 'Profile', icon: <IdcardOutlined />, component: ProfilePage },
