@@ -14,11 +14,11 @@
 
 ## T1 仓库基线与 HTTP 客户端
 
-- [ ] `git init`，提交当前代码作为基线
-- [ ] 新增 `.env.example`（`VITE_API_BASE_URL=http://localhost:8001/api/v1`）
-- [ ] 新增 `src/api/client.ts`：fetch 封装、Bearer token、统一错误解析、401 清理会话并跳转 `/login`
-- [ ] 新增 `src/types/api.ts`：`ApiUser`、`Role`、`TokenResponse`、分页/筛选参数
-- [ ] `pnpm type-check`、`pnpm lint` 通过
+- [x] `git init`，提交当前代码作为基线
+- [x] 新增 `.env.example`（`VITE_API_BASE_URL=http://localhost:8001/api/v1`）
+- [x] 新增 `src/api/client.ts`：fetch 封装、Bearer token、统一错误解析、401 清理会话并跳转 `/login`
+- [x] 新增 `src/types/api.ts`：`ApiUser`、`Role`、`TokenResponse`、分页/筛选参数
+- [x] `pnpm type-check`、`pnpm lint` 通过
 
 验收：构建通过；client 在无 token 时发出不带 Authorization 的请求，有 token 时附带 Bearer。
 

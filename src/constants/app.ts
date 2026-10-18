@@ -48,8 +48,9 @@ export const appTheme: ThemeConfig = {
 };
 
 export const STORAGE_KEYS = {
-  USER: 'antd-admin-boilerplate-user',
-  PROFILE: 'antd-admin-boilerplate-profile',
+  ACCESS_TOKEN: 'pet-portal-access-token',
+  USER: 'pet-portal-user',
+  PROFILE: 'pet-portal-profile',
 } as const;
 
 const LOCALES = { 'en-US': enUS, 'zh-CN': zhCN, 'ja-JP': jaJP } as const;
