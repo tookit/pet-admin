@@ -34,7 +34,7 @@ const NotFoundPage = lazy(() => import('@/pages/errors/NotFoundPage'));
 export const protectedRoutes = [
   {
     path: 'dashboard',
-    name: 'Dashboard',
+    name: 'Workbench',
     icon: <DashboardOutlined />,
     group: 'operations',
     component: DashboardPage,
@@ -55,12 +55,19 @@ export const protectedRoutes = [
   },
   {
     path: 'categories',
-    name: 'Categories',
+    name: 'Catalog setup',
     icon: <ApartmentOutlined />,
     group: 'catalog',
     component: CategoryList,
   },
-  { path: 'tags', name: 'Tags', icon: <TagsOutlined />, group: 'catalog', component: TagList },
+  {
+    path: 'tags',
+    name: 'Tags',
+    icon: <TagsOutlined />,
+    group: 'catalog',
+    component: TagList,
+    hideInMenu: true,
+  },
   {
     path: 'media',
     name: 'Media',
@@ -74,6 +81,7 @@ export const protectedRoutes = [
     icon: <SlidersOutlined />,
     group: 'catalog',
     component: AttributeList,
+    hideInMenu: true,
   },
   {
     path: 'roles',
@@ -81,10 +89,11 @@ export const protectedRoutes = [
     icon: <SafetyCertificateOutlined />,
     group: 'system',
     component: RoleList,
+    hideInMenu: true,
   },
   {
     path: 'users',
-    name: 'User Management',
+    name: 'Users & access',
     icon: <TeamOutlined />,
     group: 'system',
     component: UserList,
@@ -95,6 +104,7 @@ export const protectedRoutes = [
     icon: <IdcardOutlined />,
     group: 'system',
     component: ProfilePage,
+    hideInMenu: true,
   },
   {
     path: 'security',
@@ -102,6 +112,7 @@ export const protectedRoutes = [
     icon: <SafetyOutlined />,
     group: 'system',
     component: SecurityPage,
+    hideInMenu: true,
   },
   {
     path: 'settings',

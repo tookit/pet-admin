@@ -125,10 +125,11 @@ export default function AuthCard({ mode }: AuthCardProps) {
           {isLogin ? 'Log in' : 'Create account'}
         </Button>
       </Form>
-      <Typography.Paragraph className="auth-switch">
-        {isLogin ? 'Need an account? ' : 'Already registered? '}
-        <Link to={isLogin ? '/register' : '/login'}>{isLogin ? 'Register' : 'Sign in'}</Link>
-      </Typography.Paragraph>
+      {!isLogin && (
+        <Typography.Paragraph className="auth-switch">
+          Already registered? <Link to="/login">Sign in</Link>
+        </Typography.Paragraph>
+      )}
       {isLogin && (
         <p className="auth-audit">
           © {new Date().getFullYear()} Petpallets · Authorized personnel only · Sign-ins are audited

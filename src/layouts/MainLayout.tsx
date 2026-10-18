@@ -20,8 +20,6 @@ import {
 } from 'antd';
 import { useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { APP_CONFIG } from '@/constants/app';
-import TemplateSettingsDrawer from '@/components/TemplateSettingsDrawer';
 import { useAuth } from '@/contexts/AuthContext';
 import { displayName } from '@/utils/user';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -53,7 +51,6 @@ export default function MainLayout() {
   const { settings, preview } = useSettings();
   const { token } = theme.useToken();
   const [search, setSearch] = useState('');
-  const [templateSettingsOpen, setTemplateSettingsOpen] = useState(false);
 
   const isSide = settings.layout === 'side';
   const activeRoute = protectedRoutes.find((route) => `/${route.path}` === pathname);
@@ -98,13 +95,6 @@ export default function MainLayout() {
         }
       />
     </Popover>,
-    <Button
-      key="settings"
-      type="text"
-      icon={<SettingOutlined />}
-      aria-label="Template settings"
-      onClick={() => setTemplateSettingsOpen(true)}
-    />,
   ];
 
   const avatar = (
@@ -183,6 +173,14 @@ export default function MainLayout() {
         location={{ pathname }}
         route={{ path: '/', routes: menuRoutes }}
         menuItemRender={(item, dom) => <Link to={item.path ?? '/dashboard'}>{dom}</Link>}
+        menuHeaderRender={() => (
+          <Link to="/dashboard" className="sider-brand" aria-label="Petpallets dashboard">
+            {settings.logo && <img src={settings.logo} alt="" />}
+            <span>
+              Pet<em>pallets</em>
+            </span>
+          </Link>
+        )}
         {...nativeHeaderProps}
         token={{
           header: {
@@ -198,14 +196,6 @@ export default function MainLayout() {
             colorBgMenuItemSelected: token.colorPrimaryBg,
           },
         }}
-        menuFooterRender={(props) =>
-          props?.collapsed ? null : (
-            <div className="layout-version">
-              {settings.name}
-              <br />v{APP_CONFIG.version} © {new Date().getFullYear()}
-            </div>
-          )
-        }
       >
         {isSide && (
           <div className="app-header">
@@ -227,10 +217,6 @@ export default function MainLayout() {
         )}
         <Outlet />
       </ProLayout>
-      <TemplateSettingsDrawer
-        open={templateSettingsOpen}
-        onClose={() => setTemplateSettingsOpen(false)}
-      />
     </ProConfigProvider>
   );
 }
