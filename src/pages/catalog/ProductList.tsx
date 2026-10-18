@@ -1,13 +1,12 @@
 import {
-  AppstoreOutlined,
   CheckCircleOutlined,
   DeleteOutlined,
-  FileTextOutlined,
+  DownloadOutlined,
   InboxOutlined,
   PictureOutlined,
   PlusOutlined,
-  StarOutlined,
   StarFilled,
+  StarOutlined,
 } from '@ant-design/icons';
 import type { ProColumns } from '@ant-design/pro-components';
 import {
@@ -39,7 +38,8 @@ import {
   Tag,
   Typography,
 } from 'antd';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type Key } from 'react';
+import dayjs from 'dayjs';
 import {
   addPriceTier,
   createProduct,
@@ -63,7 +63,6 @@ import {
 } from '@/api/modules/media.api';
 import { useProTable } from '@/hooks/useProTable';
 import { useSettings } from '@/contexts/SettingsContext';
-import MetricsRow from '@/components/MetricsRow';
 import { RowActions } from '@/components/RowActions';
 import type {
   ApiMedia,
@@ -128,6 +127,8 @@ export default function ProductList() {
   const [imageSelection, setImageSelection] = useState<number[]>([]);
   const [imageSaving, setImageSaving] = useState(false);
   const [stats, setStats] = useState<ProductStats>(EMPTY_STATS);
+  const [selectedKeys, setSelectedKeys] = useState<Key[]>([]);
+  const [exporting, setExporting] = useState(false);
   const [params, setParams] = useState<ProductQueryParams>({});
   const [categoryOptions, setCategoryOptions] = useState<Array<{ value: number; label: string }>>(
     [],
@@ -183,6 +184,48 @@ export default function ProductList() {
       void message.success(success);
     } catch {
       void message.error('Unable to update products. Please try again.');
+    }
+  };
+
+  /** Batch status change over the current table selection (design §5: toolbar). */
+  const batchUpdateStatus = (status: ProductStatus) => {
+    const ids = selectedKeys.map(Number);
+    if (!ids.length) return;
+    void perform(async () => {
+      await Promise.all(ids.map((id) => updateProduct(id, { status })));
+      setSelectedKeys([]);
+    }, `${ids.length} product${ids.length > 1 ? 's' : ''} updated`);
+  };
+
+  /** Export the filtered catalog (first 1,000 rows) as CSV. */
+  const exportCsv = async () => {
+    setExporting(true);
+    try {
+      const response = await getProductList({ pageSize: 1000 });
+      const header = ['SKU', 'Name', 'Status', 'Type', 'Min price (USD)', 'MOQ', 'Created at'];
+      const rows = response.result.map((product) => [
+        product.sku,
+        product.name,
+        product.status,
+        product.type,
+        product.min_price != null ? Number(product.min_price).toFixed(2) : '',
+        product.moq,
+        product.created_at?.slice(0, 10) ?? '',
+      ]);
+      const csv = [header, ...rows]
+        .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+        .join('\n');
+      const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `products-${dayjs().format('YYYYMMDD')}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      void message.error('Unable to export products');
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -296,6 +339,38 @@ export default function ProductList() {
       ),
     },
     {
+      title: 'Categories',
+      dataIndex: 'categories',
+      width: 200,
+      render: (_: unknown, product: ApiProduct) =>
+        product.categories.length ? (
+          <Space size={4} wrap>
+            {product.categories.map((category) => (
+              <Tag key={category.id} color="blue">
+                {category.name}
+              </Tag>
+            ))}
+          </Space>
+        ) : (
+          '—'
+        ),
+    },
+    {
+      title: 'Price / MOQ',
+      dataIndex: 'min_price',
+      width: 160,
+      render: (_: unknown, product: ApiProduct) => (
+        <Space direction="vertical" size={0}>
+          <Typography.Text style={{ fontVariantNumeric: 'tabular-nums' }}>
+            {product.min_price != null ? `From $${Number(product.min_price).toFixed(2)}` : '—'}
+          </Typography.Text>
+          <Typography.Text type="secondary" style={{ fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>
+            {`MOQ ${product.moq}+`}
+          </Typography.Text>
+        </Space>
+      ),
+    },
+    {
       title: 'Status',
       dataIndex: 'status',
       width: 120,
@@ -306,40 +381,18 @@ export default function ProductList() {
       ),
     },
     {
-      title: 'Type',
-      dataIndex: 'type',
-      width: 100,
-      render: (_: unknown, product: ApiProduct) => PRODUCT_TYPE_LABEL[product.type],
-    },
-    {
-      title: 'Categories',
-      dataIndex: 'categories',
-      width: 200,
-      render: (_: unknown, product: ApiProduct) =>
-        product.categories.length ? (
-          <Space size={4} wrap>
-            {product.categories.map((category) => (
-              <Tag key={category.id}>{category.name}</Tag>
-            ))}
-          </Space>
-        ) : (
-          '—'
-        ),
-    },
-    {
-      title: 'From',
-      dataIndex: 'min_price',
-      width: 130,
-      render: (_: unknown, product: ApiProduct) => formatMoney(product.min_price),
-    },
-    { title: 'MOQ', dataIndex: 'moq', width: 80 },
-    {
       title: 'Created at',
       dataIndex: 'created_at',
       width: 130,
       responsive: ['lg' as const],
       render: (_: unknown, product: ApiProduct) =>
-        product.created_at ? product.created_at.slice(0, 10) : '—',
+        product.created_at ? (
+          <Typography.Text type="secondary" style={{ fontVariantNumeric: 'tabular-nums' }}>
+            {product.created_at.slice(0, 10)}
+          </Typography.Text>
+        ) : (
+          '—'
+        ),
     },
     {
       title: 'Actions',
@@ -378,51 +431,22 @@ export default function ProductList() {
   return (
     <PageContainer
       title="Products"
-      subTitle="Manage the wholesale catalog stored in pet-api."
+      subTitle={`${stats.total} products in the catalog · ${stats.draft} drafts`}
       extra={
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => openEditor()}>
-          New Product
-        </Button>
+        <Space>
+          <Button icon={<DownloadOutlined />} loading={exporting} onClick={() => void exportCsv()}>
+            Export CSV
+          </Button>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => openEditor()}>
+            New Product
+          </Button>
+        </Space>
       }
     >
       <div className="section-stack">
-        <MetricsRow
-          items={[
-            {
-              label: 'Total Products',
-              value: stats.total,
-              icon: <AppstoreOutlined />,
-              detail: 'Across every category',
-            },
-            {
-              label: 'Active',
-              value: stats.active,
-              icon: <CheckCircleOutlined />,
-              tone: 'success',
-              trend: {
-                text: `${stats.total ? Math.round((stats.active / stats.total) * 100) : 0}%`,
-                caption: 'of total products',
-              },
-            },
-            {
-              label: 'Draft',
-              value: stats.draft,
-              icon: <FileTextOutlined />,
-              tone: 'warning',
-              detail: 'Not published yet',
-            },
-            {
-              label: 'Archived',
-              value: stats.archived,
-              icon: <StarOutlined />,
-              tone: 'error',
-              detail: 'Retired from the catalog',
-            },
-          ]}
-        />
         <Card styles={{ body: { padding: '8px 24px' } }}>
           <QueryFilter<ProductQueryParams>
-            defaultCollapsed={false}
+            defaultCollapsed
             span={{ xs: 24, sm: 12, md: 12, lg: 6, xl: 6, xxl: 6 }}
             labelWidth="auto"
             onFinish={(values) => {
@@ -467,6 +491,30 @@ export default function ProductList() {
           columns={columns}
           params={params}
           search={false}
+          rowSelection={{
+            selectedRowKeys: selectedKeys,
+            onChange: (keys) => setSelectedKeys(keys),
+          }}
+          toolBarRender={() => [
+            <Button
+              key="activate"
+              icon={<CheckCircleOutlined />}
+              disabled={!selectedKeys.length}
+              onClick={() => batchUpdateStatus('active')}
+            >
+              Activate
+            </Button>,
+            <Button
+              key="discontinue"
+              disabled={!selectedKeys.length}
+              onClick={() => batchUpdateStatus('discontinued')}
+            >
+              Discontinue
+            </Button>,
+            <Typography.Text key="count" type="secondary">
+              {selectedKeys.length} selected
+            </Typography.Text>,
+          ]}
           headerTitle={`${stats.total} products in total`}
           scroll={{ x: 1100 }}
           defaultSize={

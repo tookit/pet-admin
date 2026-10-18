@@ -118,8 +118,8 @@
 
 ## R4 商品列表
 
-- [ ] 工具栏：Export CSV、批量 Activate / Discontinue、选中计数。
-- [ ] 筛选默认收起；Price/MOQ 合并列（tabular-nums）；Categories、创建时间、状态语义色。
+- [x] 工具栏：Export CSV、批量 Activate / Discontinue、选中计数。
+- [x] 筛选默认收起；Price/MOQ 合并列（tabular-nums）；Categories、创建时间、状态语义色。
 - 说明：后端列表项无 inventory / updated_at，故不显示库存与更新时间列。
 
 ## R5 询盘管理
@@ -143,6 +143,7 @@
 ## 提交策略
 
 R1–R7 各自独立提交，前缀 `feat:` / `docs:`；不推送。
+
 
 
 

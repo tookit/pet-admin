@@ -7,11 +7,13 @@ export const PRODUCT_STATUS_OPTIONS: Array<{ value: ProductStatus; label: string
   { value: 'archived', label: 'Archived' },
 ];
 
+// Status colors follow the semantic system in adminpro-design-docs/design.md §8:
+// green = on sale, gold = needs attention, default = neutral lifecycle states.
 export const PRODUCT_STATUS_META: Record<ProductStatus, { label: string; color: string }> = {
   draft: { label: 'Draft', color: 'default' },
   active: { label: 'Active', color: 'green' },
-  discontinued: { label: 'Discontinued', color: 'orange' },
-  archived: { label: 'Archived', color: 'red' },
+  discontinued: { label: 'Discontinued', color: 'gold' },
+  archived: { label: 'Archived', color: 'default' },
 };
 
 export const PRODUCT_TYPE_OPTIONS: Array<{ value: ProductType; label: string }> = [
