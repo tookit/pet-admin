@@ -73,7 +73,7 @@
 ### T9 路由、验证与交付（已完成）
 
 - [x] `routeDefinitions.tsx` 增加 profile / security / settings，修正侧栏菜单。
-- [x] `pnpm type-check`、`pnpm lint`、`pnpm build` 通过。
+- [ ] `pnpm type-check`、`pnpm lint`、`pnpm build` 通过。
 - [x] 桌面 / 平板 / 移动端检查核心流程；更新 README 与 CLAUDE.md。
 - 说明：`/` 现在跳 `settings.landingPage`，不再写死 `/dashboard`。响应式靠栅格断点与 `scroll={{ x }}` 保证，未做真机/浏览器截图验证（本会话 chrome-devtools MCP 连接失败，见下方验证记录）。
 
@@ -88,3 +88,59 @@
 - 移动端侧栏与表格横向滚动。
 
 以上为设计意图，尚未在真实浏览器中逐条走查：本会话 `chrome-devtools` MCP 连接失败（`Connection closed`），无法截图或操作页面。已执行的验证只有 `pnpm type-check`、`pnpm lint`、`pnpm build`（均通过，构建仅剩既有的 >500 kB chunk 警告）。改动合并前需人工在浏览器中过一遍。
+
+---
+
+# 第二轮：按新设计文档与截图重构（2026-10-18）
+
+依据：`design/adminpro-design-docs/design.md`、`dashboard.md`、`product-list.md`、`inquiry.md`、`media.md`、`login.md` 与 `design/*.png`。UI 文案沿用既有英文，除非设计文档要求中文品牌语。
+
+## R1 设计系统与外壳
+
+- [ ] 主题 token：Mint Teal / Warm Gold / Cool Gray、圆角 4/6、56px header、216px sider、表头与菜单选中色。
+- [ ] 品牌替换：名称 Petpallets Admin、favicon/logo、默认 `side` 布局、本地存储 key。
+- [ ] 侧栏三组：Operations / Catalog / System，使用 ProLayout `siderMenuType="group"`。
+- [ ] 卡片边框优先于阴影；页面标题 20px。
+- 说明：菜单以英文呈现（Dashboard、Inquiries 等），分组标题英文；不引入设计稿中的金色待回复徽标（后端无状态计数）。
+
+## R2 登录页
+
+- [ ] 双栏：左侧品牌渐变、64px logo、标题/副文案/引用块；右侧极简表单。
+- [ ] 表单：Welcome back、Username、Password（可切换显示）、Keep me signed in、Forgot password、通栏 40px 按钮、审计页脚。
+- 说明：pet-api 无密码重置接口，Forgot password 指向联系管理员的说明，不伪造重置流程；`Keep me signed in` 仅切换存储（sessionStorage → localStorage 需改 AuthContext，暂不做，复选框仅作为偏好展示）。
+
+## R3 工作台
+
+- [ ] 真实数据：`/quotes` 聚合询盘、`/products` 统计，KPI 行。
+- [ ] 30 天询盘面积图 + 无障碍数据表；待办列表可跳转。
+- [ ] Loading Skeleton、失败 Alert + Retry。
+- 说明：移除设计稿之外的旧卡片（Revenue/Traffic/Tasks/Calendar）；询盘无状态字段，待办按「今日新询盘」计算。
+
+## R4 商品列表
+
+- [ ] 工具栏：Export CSV、批量 Activate / Discontinue、选中计数。
+- [ ] 筛选默认收起；Price/MOQ 合并列（tabular-nums）；Categories、创建时间、状态语义色。
+- 说明：后端列表项无 inventory / updated_at，故不显示库存与更新时间列。
+
+## R5 询盘管理
+
+- [ ] 列表：INQ 编号、客户（公司 + 联系人/邮箱）、意向商品与数量、接收时间、详情操作。
+- [ ] 详情抽屉 430px：客户信息、商品明细（名称/数量/参考价）、客户留言、无状态时间线可省。
+- [ ] 无状态字段，故不做 Tabs；无回复/报价接口，故不放「回复询盘/生成报价单」假按钮。
+- 说明：字段来自 pet-api `ApiQuote`（name/email/phone/company/message/product/quantity），INQ 编号由记录 id 派生。
+
+## R6 媒体库
+
+- [ ] 左侧目录面板按 `aggregate_type` 归类（All / Product / Category / User），代替设计稿的文件夹。
+- [ ] 上传 Dragger、网格/列表切换、搜索文件名、5 列卡片、预览/复制链接/删除。
+- 说明：后端无文件夹、无使用位置/引用计数、无改名接口；「新建文件夹」与 usage tag 不实现。
+
+## R7 文档与校验
+
+- [ ] 更新 README / CLAUDE.md / AGENTS.md 中的页面说明。
+- [ ] `pnpm type-check`、`pnpm lint`、`pnpm format:check`、`pnpm build` 通过。
+
+## 提交策略
+
+R1–R7 各自独立提交，前缀 `feat:` / `docs:`；不推送。
+
