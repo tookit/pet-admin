@@ -1,4 +1,4 @@
-import { KeyOutlined, PlusOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
+import { PlusOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import type { ProColumns } from '@ant-design/pro-components';
 import {
   DrawerForm,
@@ -20,6 +20,7 @@ import {
 import { useProTable } from '@/hooks/useProTable';
 import { useSettings } from '@/contexts/SettingsContext';
 import type { ApiPermission, ApiRole, ListParams } from '@/types/api';
+import { RowActions } from '@/components/RowActions';
 
 interface RoleFormValues {
   name: string;
@@ -112,12 +113,19 @@ export default function RoleList() {
     {
       title: 'Actions',
       valueType: 'option',
-      width: 150,
+      width: 80,
       fixed: 'right',
       render: (_, role) => (
-        <Button size="small" icon={<KeyOutlined />} onClick={() => void openManage(role)}>
-          Permissions
-        </Button>
+        <RowActions
+          label={`Actions for ${role.name}`}
+          items={[
+            {
+              key: 'permissions',
+              label: 'Manage permissions',
+              onClick: () => void openManage(role),
+            },
+          ]}
+        />
       ),
     },
   ];

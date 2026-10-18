@@ -1,9 +1,6 @@
 import {
   AppstoreOutlined,
   CheckCircleOutlined,
-  CopyOutlined,
-  EditOutlined,
-  EyeOutlined,
   DeleteOutlined,
   FileTextOutlined,
   InboxOutlined,
@@ -36,7 +33,6 @@ import {
   Input,
   InputNumber,
   Modal,
-  Popconfirm,
   Select,
   Space,
   Table,
@@ -68,6 +64,7 @@ import {
 import { useProTable } from '@/hooks/useProTable';
 import { useSettings } from '@/contexts/SettingsContext';
 import MetricsRow from '@/components/MetricsRow';
+import { RowActions } from '@/components/RowActions';
 import type {
   ApiMedia,
   ApiProduct,
@@ -348,51 +345,32 @@ export default function ProductList() {
       title: 'Actions',
       valueType: 'option' as const,
       key: 'actions',
-      width: 150,
+      width: 80,
       fixed: 'right' as const,
       render: (_: unknown, product: ApiProduct) => (
-        <Space size={4}>
-          <Button
-            size="small"
-            type="text"
-            icon={<EyeOutlined />}
-            aria-label={`View ${product.name}`}
-            onClick={() => void openDetail(product)}
-          />
-          <Button
-            size="small"
-            type="text"
-            icon={<EditOutlined />}
-            aria-label={`Edit ${product.name}`}
-            onClick={() => openEditor(product)}
-          />
-          <Button
-            size="small"
-            type="text"
-            icon={<CopyOutlined />}
-            aria-label={`Duplicate ${product.name}`}
-            onClick={() =>
-              void perform(() => duplicateProduct(product.id).then(() => {}), 'Product duplicated')
-            }
-          />
-          <Popconfirm
-            title={`Delete ${product.name}?`}
-            description="This soft-deletes the product in pet-api."
-            okText="Delete"
-            okButtonProps={{ danger: true }}
-            onConfirm={() => {
-              void perform(() => deleteProduct(product.id), 'Product deleted');
-            }}
-          >
-            <Button
-              size="small"
-              type="text"
-              danger
-              icon={<DeleteOutlined />}
-              aria-label={`Delete ${product.name}`}
-            />
-          </Popconfirm>
-        </Space>
+        <RowActions
+          label={`Actions for ${product.name}`}
+          items={[
+            {
+              key: 'view',
+              label: 'View details',
+              onClick: () => void openDetail(product),
+            },
+            { key: 'edit', label: 'Edit', onClick: () => openEditor(product) },
+            {
+              key: 'duplicate',
+              label: 'Duplicate',
+              onClick: () =>
+                void perform(
+                  () => duplicateProduct(product.id).then(() => {}),
+                  'Product duplicated',
+                ),
+            },
+          ]}
+          deleteTitle={`Delete ${product.name}?`}
+          deleteContent="This soft-deletes the product in pet-api."
+          onDelete={() => perform(() => deleteProduct(product.id), 'Product deleted')}
+        />
       ),
     },
   ];

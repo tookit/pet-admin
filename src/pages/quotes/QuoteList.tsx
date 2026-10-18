@@ -1,4 +1,3 @@
-import { DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import type { ProColumns } from '@ant-design/pro-components';
 import {
   PageContainer,
@@ -7,20 +6,21 @@ import {
   ProTable,
   QueryFilter,
 } from '@ant-design/pro-components';
-import { App, Button, Card, Drawer, Space, Table, Tag, Typography } from 'antd';
+import { App, Card, Drawer, Space, Table, Tag, Typography } from 'antd';
 import { useState } from 'react';
 import { deleteQuote, getQuote, getQuoteList } from '@/api/modules/quote.api';
 import { getProduct } from '@/api/modules/product.api';
 import { useProTable } from '@/hooks/useProTable';
 import { useSettings } from '@/contexts/SettingsContext';
 import type { ApiQuote, QuoteQueryParams } from '@/types/api';
+import { RowActions } from '@/components/RowActions';
 
 export default function QuoteList() {
   const [params, setParams] = useState<QuoteQueryParams>({});
   const [detail, setDetail] = useState<ApiQuote>();
   const [detailLoading, setDetailLoading] = useState(false);
   const [productNames, setProductNames] = useState<Record<number, string>>({});
-  const { message, modal } = App.useApp();
+  const { message } = App.useApp();
   const { settings } = useSettings();
   const { actionRef, defaultProTableProps } = useProTable<ApiQuote, QuoteQueryParams>({
     fetchData: getQuoteList,
@@ -89,36 +89,22 @@ export default function QuoteList() {
     {
       title: 'Actions',
       valueType: 'option',
-      width: 100,
+      width: 80,
       fixed: 'right',
       render: (_, quote) => (
-        <Space size={4}>
-          <Button
-            size="small"
-            type="text"
-            icon={<EyeOutlined />}
-            aria-label={`View quote ${quote.id}`}
-            onClick={() => void openDetail(quote)}
-          />
-          <Button
-            size="small"
-            type="text"
-            danger
-            icon={<DeleteOutlined />}
-            aria-label={`Delete quote ${quote.id}`}
-            onClick={() => {
-              modal.confirm({
-                title: `Delete quote from ${quote.name}?`,
-                content: 'This permanently removes the request from pet-api.',
-                okText: 'Delete',
-                okButtonProps: { danger: true },
-                onOk: () => {
-                  void remove(quote);
-                },
-              });
-            }}
-          />
-        </Space>
+        <RowActions
+          label={`Actions for quote ${quote.id}`}
+          items={[
+            {
+              key: 'view',
+              label: 'View details',
+              onClick: () => void openDetail(quote),
+            },
+          ]}
+          deleteTitle={`Delete quote from ${quote.name}?`}
+          deleteContent="This permanently removes the request from pet-api."
+          onDelete={() => remove(quote)}
+        />
       ),
     },
   ];

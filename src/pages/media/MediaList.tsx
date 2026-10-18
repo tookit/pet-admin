@@ -1,10 +1,4 @@
-import {
-  CopyOutlined,
-  DeleteOutlined,
-  FileOutlined,
-  InboxOutlined,
-  UploadOutlined,
-} from '@ant-design/icons';
+import { FileOutlined, InboxOutlined, UploadOutlined } from '@ant-design/icons';
 import type { ProColumns } from '@ant-design/pro-components';
 import {
   PageContainer,
@@ -19,6 +13,7 @@ import { deleteMedia, getMediaList, mediaUrl, uploadMedia } from '@/api/modules/
 import { useProTable } from '@/hooks/useProTable';
 import { useSettings } from '@/contexts/SettingsContext';
 import type { ApiMedia, MediaAggregateType, MediaQueryParams } from '@/types/api';
+import { RowActions } from '@/components/RowActions';
 
 const TYPE_OPTIONS: Array<{ value: MediaAggregateType; label: string }> = [
   { value: 'image', label: 'Image' },
@@ -44,7 +39,7 @@ const formatSize = (bytes: number) =>
 export default function MediaList() {
   const [params, setParams] = useState<MediaQueryParams>({});
   const [uploading, setUploading] = useState(false);
-  const { message, modal } = App.useApp();
+  const { message } = App.useApp();
   const { settings } = useSettings();
   const { actionRef, defaultProTableProps } = useProTable<ApiMedia, MediaQueryParams>({
     fetchData: getMediaList,
@@ -137,36 +132,22 @@ export default function MediaList() {
     {
       title: 'Actions',
       valueType: 'option',
-      width: 100,
+      width: 80,
       fixed: 'right',
       render: (_, media) => (
-        <Space size={4}>
-          <Button
-            size="small"
-            type="text"
-            icon={<CopyOutlined />}
-            aria-label={`Copy URL for ${media.filename}`}
-            onClick={() => void copyUrl(media)}
-          />
-          <Button
-            size="small"
-            type="text"
-            danger
-            icon={<DeleteOutlined />}
-            aria-label={`Delete ${media.filename}`}
-            onClick={() => {
-              modal.confirm({
-                title: `Delete ${media.filename}?`,
-                content: 'The file is removed from storage and from every product that uses it.',
-                okText: 'Delete',
-                okButtonProps: { danger: true },
-                onOk: () => {
-                  void remove(media);
-                },
-              });
-            }}
-          />
-        </Space>
+        <RowActions
+          label={`Actions for ${media.filename}`}
+          items={[
+            {
+              key: 'copy',
+              label: 'Copy URL',
+              onClick: () => void copyUrl(media),
+            },
+          ]}
+          deleteTitle={`Delete ${media.filename}?`}
+          deleteContent="The file is removed from storage and from every product that uses it."
+          onDelete={() => remove(media)}
+        />
       ),
     },
   ];

@@ -1,4 +1,4 @@
-import { DeleteOutlined, EditOutlined, InfoCircleOutlined, PlusOutlined } from '@ant-design/icons';
+import { InfoCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import type { ProColumns } from '@ant-design/pro-components';
 import {
   DrawerForm,
@@ -9,7 +9,7 @@ import {
   ProFormText,
   ProTable,
 } from '@ant-design/pro-components';
-import { App, Button, Drawer, Form, Input, Popconfirm, Space, Switch, Tag, Typography } from 'antd';
+import { App, Button, Drawer, Form, Input, Space, Switch, Tag, Typography } from 'antd';
 import { useState } from 'react';
 import {
   addAttributeValue,
@@ -28,6 +28,7 @@ import type {
   AttributeQueryParams,
   AttributeType,
 } from '@/types/api';
+import { RowActions } from '@/components/RowActions';
 
 const TYPE_OPTIONS: Array<{ value: AttributeType; label: string }> = [
   { value: 'text', label: 'Text' },
@@ -123,6 +124,16 @@ export default function AttributeList() {
     }
   };
 
+  const removeAttribute = async (attribute: ApiAttribute) => {
+    try {
+      await deleteAttribute(attribute.id);
+      await actionRef.current?.reload();
+      void message.success('Attribute deleted');
+    } catch {
+      void message.error('Unable to delete attribute');
+    }
+  };
+
   const columns: ProColumns<ApiAttribute>[] = [
     { title: 'Attribute', dataIndex: 'name', width: 200 },
     {
@@ -171,46 +182,27 @@ export default function AttributeList() {
     {
       title: 'Actions',
       valueType: 'option',
-      width: 170,
+      width: 80,
       fixed: 'right',
       render: (_, attribute) => (
-        <Space size={4}>
-          <Button size="small" onClick={() => setManaging(attribute)}>
-            Values
-          </Button>
-          <Button
-            size="small"
-            type="text"
-            icon={<EditOutlined />}
-            aria-label={`Edit ${attribute.name}`}
-            onClick={() => openEditor(attribute)}
-          />
-          <Popconfirm
-            title={`Delete ${attribute.name}?`}
-            description="Products using this attribute lose the property."
-            okText="Delete"
-            okButtonProps={{ danger: true }}
-            onConfirm={() => {
-              void (async () => {
-                try {
-                  await deleteAttribute(attribute.id);
-                  await actionRef.current?.reload();
-                  void message.success('Attribute deleted');
-                } catch {
-                  void message.error('Unable to delete attribute');
-                }
-              })();
-            }}
-          >
-            <Button
-              size="small"
-              type="text"
-              danger
-              icon={<DeleteOutlined />}
-              aria-label={`Delete ${attribute.name}`}
-            />
-          </Popconfirm>
-        </Space>
+        <RowActions
+          label={`Actions for ${attribute.name}`}
+          items={[
+            {
+              key: 'values',
+              label: 'Manage values',
+              onClick: () => setManaging(attribute),
+            },
+            {
+              key: 'edit',
+              label: 'Edit',
+              onClick: () => openEditor(attribute),
+            },
+          ]}
+          deleteTitle={`Delete ${attribute.name}?`}
+          deleteContent="Products using this attribute lose the property."
+          onDelete={() => removeAttribute(attribute)}
+        />
       ),
     },
   ];

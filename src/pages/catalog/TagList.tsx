@@ -1,12 +1,13 @@
-import { DeleteOutlined, EditOutlined, PlusOutlined, TagsOutlined } from '@ant-design/icons';
+import { PlusOutlined, TagsOutlined } from '@ant-design/icons';
 import type { ProColumns } from '@ant-design/pro-components';
 import { DrawerForm, PageContainer, ProFormText, ProTable } from '@ant-design/pro-components';
-import { App, Button, Form, Popconfirm, Space, Tag } from 'antd';
+import { App, Button, Form, Space, Tag } from 'antd';
 import { useState } from 'react';
 import { createTag, deleteTag, getTagList, updateTag } from '@/api/modules/tag.api';
 import { useProTable } from '@/hooks/useProTable';
 import { useSettings } from '@/contexts/SettingsContext';
 import type { ApiTag, ListParams, TagCreateParams } from '@/types/api';
+import { RowActions } from '@/components/RowActions';
 
 interface TagFormValues {
   name: string;
@@ -70,35 +71,16 @@ export default function TagList() {
     {
       title: 'Actions',
       valueType: 'option',
-      width: 110,
+      width: 80,
       fixed: 'right',
       render: (_, tag) => (
-        <Space size={4}>
-          <Button
-            size="small"
-            type="text"
-            icon={<EditOutlined />}
-            aria-label={`Edit ${tag.name}`}
-            onClick={() => openEditor(tag)}
-          />
-          <Popconfirm
-            title={`Delete ${tag.name}?`}
-            description="Products using this tag lose it."
-            okText="Delete"
-            okButtonProps={{ danger: true }}
-            onConfirm={() => {
-              void remove(tag);
-            }}
-          >
-            <Button
-              size="small"
-              type="text"
-              danger
-              icon={<DeleteOutlined />}
-              aria-label={`Delete ${tag.name}`}
-            />
-          </Popconfirm>
-        </Space>
+        <RowActions
+          label={`Actions for ${tag.name}`}
+          items={[{ key: 'edit', label: 'Edit', onClick: () => openEditor(tag) }]}
+          deleteTitle={`Delete ${tag.name}?`}
+          deleteContent="Products using this tag lose it."
+          onDelete={() => remove(tag)}
+        />
       ),
     },
   ];

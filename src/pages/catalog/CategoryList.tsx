@@ -1,10 +1,4 @@
-import {
-  ApartmentOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  PlusOutlined,
-  ReloadOutlined,
-} from '@ant-design/icons';
+import { ApartmentOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ProColumns } from '@ant-design/pro-components';
 import {
   DrawerForm,
@@ -16,7 +10,7 @@ import {
   ProFormTextArea,
   ProTable,
 } from '@ant-design/pro-components';
-import { App, Avatar, Button, Form, Popconfirm, Space, Switch, Tag, Typography } from 'antd';
+import { App, Avatar, Button, Form, Space, Switch, Tag, Typography } from 'antd';
 import { useCallback, useEffect, useState } from 'react';
 import {
   createCategory,
@@ -27,6 +21,7 @@ import {
   updateCategory,
 } from '@/api/modules/category.api';
 import type { CategoryCreateParams, CategoryTree, CategoryUpdateParams } from '@/types/api';
+import { RowActions } from '@/components/RowActions';
 
 interface CategoryFormValues {
   name: string;
@@ -181,35 +176,16 @@ export default function CategoryList() {
     {
       title: 'Actions',
       valueType: 'option',
-      width: 110,
+      width: 80,
       fixed: 'right',
       render: (_, category) => (
-        <Space size={4}>
-          <Button
-            size="small"
-            type="text"
-            icon={<EditOutlined />}
-            aria-label={`Edit ${category.name}`}
-            onClick={() => openEditor(category)}
-          />
-          <Popconfirm
-            title={`Delete ${category.name}?`}
-            description="Remove its children first; categories with products may be protected."
-            okText="Delete"
-            okButtonProps={{ danger: true }}
-            onConfirm={() => {
-              void remove(category);
-            }}
-          >
-            <Button
-              size="small"
-              type="text"
-              danger
-              icon={<DeleteOutlined />}
-              aria-label={`Delete ${category.name}`}
-            />
-          </Popconfirm>
-        </Space>
+        <RowActions
+          label={`Actions for ${category.name}`}
+          items={[{ key: 'edit', label: 'Edit', onClick: () => openEditor(category) }]}
+          deleteTitle={`Delete ${category.name}?`}
+          deleteContent="Remove its children first; categories with products may be protected."
+          onDelete={() => remove(category)}
+        />
       ),
     },
   ];
