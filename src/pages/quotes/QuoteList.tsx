@@ -8,12 +8,13 @@ import {
   Card,
   Descriptions,
   Drawer,
+  Empty,
+  Form,
   Skeleton,
-  Space,
   Table,
   Typography,
 } from 'antd';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import { deleteQuote, getQuote, getQuoteList } from '@/api/modules/quote.api';
 import { getProduct } from '@/api/modules/product.api';
 import { mediaUrl } from '@/api/modules/media.api';
@@ -26,6 +27,8 @@ import type { ApiProductDetail, ApiQuote, QuoteQueryParams } from '@/types/api';
 const inquiryNo = (id: number) => `INQ-${String(id).padStart(4, '0')}`;
 const totalUnits = (quote: ApiQuote) => quote.items.reduce((sum, item) => sum + item.quantity, 0);
 const formatDate = (value: string) => value.slice(0, 16).replace('T', ' ');
+const formatPrice = (value: number | null | undefined) =>
+  value == null ? '—' : `$${Number(value).toFixed(2)}`;
 
 /**
  * Inquiries (design: adminpro-design-docs/inquiry.md), adapted to pet-api:
@@ -33,6 +36,7 @@ const formatDate = (value: string) => value.slice(0, 16).replace('T', ' ');
  * tabs and reply/quote actions are intentionally absent.
  */
 export default function QuoteList() {
+  const [filterForm] = Form.useForm();
   const [params, setParams] = useState<QuoteQueryParams>({});
   const [detail, setDetail] = useState<ApiQuote>();
   const [detailLoading, setDetailLoading] = useState(false);
@@ -98,6 +102,14 @@ export default function QuoteList() {
 
   const productName = (id: number) => products[id]?.name ?? `Product #${id}`;
 
+  const resetFilters = () => {
+    filterForm.resetFields();
+    setParams({});
+    actionRef.current?.setPageInfo?.({ current: 1 });
+  };
+
+  const hasFilters = Object.values(params).some((value) => value !== undefined && value !== '');
+
   const intent = (quote: ApiQuote) => {
     const names = quote.items
       .map((item) => products[item.product_id]?.name)
@@ -155,12 +167,10 @@ export default function QuoteList() {
       dataIndex: 'company',
       width: 250,
       render: (_, quote) => (
-        <Space direction="vertical" size={0}>
-          <Typography.Text strong>{quote.company || quote.name}</Typography.Text>
-          <Typography.Text type="secondary" className="text-xs">
-            {quote.name} · {quote.email}
-          </Typography.Text>
-        </Space>
+        <div className="inquiry-customer">
+          <span className="inquiry-customer__company">{quote.company || quote.name}</span>
+          <span className="inquiry-customer__contact">{quote.name}</span>
+        </div>
       ),
     },
     {
@@ -172,15 +182,15 @@ export default function QuoteList() {
     {
       title: 'Quantity',
       dataIndex: 'quantity',
-      width: 100,
+      width: 110,
       align: 'right',
-      render: (_, quote) => <span className="tabular-nums">{totalUnits(quote)}</span>,
+      render: (_, quote) => <span className="inquiry-qty">{totalUnits(quote)} pcs</span>,
     },
     {
       title: 'Received',
       dataIndex: 'created_at',
       width: 160,
-      render: (_, quote) => <span className="tabular-nums">{formatDate(quote.created_at)}</span>,
+      render: (_, quote) => <span className="muted-time">{formatDate(quote.created_at)}</span>,
     },
     {
       title: 'Actions',
@@ -204,7 +214,7 @@ export default function QuoteList() {
   return (
     <PageContainer
       title="Inquiries"
-      subTitle="Buyer RFQ inbox — review each request and its line items."
+      subTitle="Buyer RFQ inbox — received → quoted → won."
       extra={
         <Button icon={<DownloadOutlined />} loading={exporting} onClick={() => void exportCsv()}>
           Export CSV
@@ -214,17 +224,21 @@ export default function QuoteList() {
       <div className="section-stack">
         <Card styles={{ body: { padding: '8px 24px' } }}>
           <QueryFilter<QuoteQueryParams>
+            form={filterForm}
+            className="list-query"
+            colon={false}
             defaultCollapsed
             span={{ xs: 24, sm: 12, md: 12, lg: 6, xl: 6, xxl: 6 }}
             labelWidth="auto"
+            submitter={{
+              searchConfig: { submitText: 'Query', resetText: 'Reset' },
+              render: (_: unknown, dom: ReactNode[]) => [dom[1], dom[0]],
+            }}
             onFinish={(values) => {
               setParams(values);
               actionRef.current?.setPageInfo?.({ current: 1 });
             }}
-            onReset={() => {
-              setParams({});
-              actionRef.current?.setPageInfo?.({ current: 1 });
-            }}
+            onReset={resetFilters}
           >
             <ProFormText name="company" label="Company" />
             <ProFormText name="name" label="Contact" />
@@ -236,6 +250,7 @@ export default function QuoteList() {
           {...defaultProTableProps}
           columns={columns}
           params={params}
+          headerTitle={false}
           search={false}
           scroll={{ x: 960 }}
           onRow={(quote) => ({
@@ -253,6 +268,20 @@ export default function QuoteList() {
             defaultPageSize: settings.pageSize,
             showSizeChanger: true,
             showTotal: (total, range) => `Showing ${range[0]}–${range[1]} of ${total} results`,
+          }}
+          locale={{
+            emptyText: (
+              <Empty
+                className="list-empty"
+                description={
+                  hasFilters
+                    ? 'No inquiries match these filters.'
+                    : 'No inquiries yet. New RFQs arrive here.'
+                }
+              >
+                {hasFilters && <Button onClick={resetFilters}>Reset filters</Button>}
+              </Empty>
+            ),
           }}
         />
       </div>
@@ -314,28 +343,41 @@ export default function QuoteList() {
                     title: 'Product',
                     dataIndex: 'product_id',
                     render: (_, item) => (
-                      <Space>
+                      <div className="inquiry-item-product">
                         <Avatar
                           shape="square"
                           size={32}
                           src={mediaUrl(products[item.product_id]?.featured_image ?? null)}
                           icon={<InboxOutlined />}
                         />
-                        <Space direction="vertical" size={0}>
-                          <span>{productName(item.product_id)}</span>
-                          <Typography.Text type="secondary" className="text-xs">
+                        <div className="inquiry-item-product__body">
+                          <span className="inquiry-item-product__name">
+                            {productName(item.product_id)}
+                          </span>
+                          <span className="inquiry-item-product__sku">
                             {products[item.product_id]?.sku ?? `#${item.product_id}`}
-                          </Typography.Text>
-                        </Space>
-                      </Space>
+                          </span>
+                        </div>
+                      </div>
                     ),
                   },
                   {
                     title: 'Qty',
                     dataIndex: 'quantity',
-                    width: 64,
+                    width: 48,
                     align: 'right',
                     className: 'tabular-nums',
+                  },
+                  {
+                    title: 'Ref. price',
+                    dataIndex: 'unit_price',
+                    width: 76,
+                    align: 'right',
+                    render: (_, item) => (
+                      <span className="inquiry-ref-price">
+                        {formatPrice(products[item.product_id]?.min_price)}
+                      </span>
+                    ),
                   },
                 ]}
               />

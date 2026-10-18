@@ -2,6 +2,7 @@ import {
   CheckCircleOutlined,
   DeleteOutlined,
   DownloadOutlined,
+  DownOutlined,
   InboxOutlined,
   PictureOutlined,
   PlusOutlined,
@@ -14,6 +15,7 @@ import {
   ProDescriptions,
   ProFormSelect,
   ProFormText,
+  ProFormTreeSelect,
   ProTable,
   QueryFilter,
 } from '@ant-design/pro-components';
@@ -23,6 +25,7 @@ import {
   Button,
   Card,
   Drawer,
+  Dropdown,
   Empty,
   Form,
   Image,
@@ -35,7 +38,7 @@ import {
   Tag,
   Typography,
 } from 'antd';
-import { useCallback, useEffect, useState, type Key } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type Key, type ReactNode } from 'react';
 import dayjs from 'dayjs';
 import {
   addPriceTier,
@@ -49,7 +52,7 @@ import {
   updateProduct,
   type ProductStats,
 } from '@/api/modules/product.api';
-import { flattenCategories, getCategoryTree } from '@/api/modules/category.api';
+import { getCategoryTree } from '@/api/modules/category.api';
 import { getTagList } from '@/api/modules/tag.api';
 import {
   getMediaList,
@@ -59,7 +62,6 @@ import {
 } from '@/api/modules/media.api';
 import { useProTable } from '@/hooks/useProTable';
 import { useSettings } from '@/contexts/SettingsContext';
-import { RowActions } from '@/components/RowActions';
 import type {
   ApiMedia,
   ApiProduct,
@@ -80,11 +82,31 @@ import ProductForm from './ProductForm';
 
 const EMPTY_STATS: ProductStats = { total: 0, active: 0, draft: 0, archived: 0 };
 
+interface CategoryTreeOption {
+  title: string;
+  value: number;
+  children?: CategoryTreeOption[];
+}
+
+const toCategoryTreeOptions = (nodes: CategoryTree[]): CategoryTreeOption[] =>
+  nodes.map((node) => ({
+    title: node.name,
+    value: node.id,
+    children: node.children.length ? toCategoryTreeOptions(node.children) : undefined,
+  }));
+
+const currencySymbol = (currency: string) =>
+  currency === 'CNY' ? '¥' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : '$';
+
 const formatMoney = (value: number | null | undefined, currency = 'USD') =>
-  value == null ? '—' : `${currency} ${Number(value).toFixed(2)}`;
+  value == null ? '—' : `${currencySymbol(currency)}${Number(value).toFixed(2)}`;
+
+const formatDateTime = (value: string | null) =>
+  value ? value.slice(0, 16).replace('T', ' ') : '—';
 
 export default function ProductList() {
   const [tierForm] = Form.useForm<{ min_quantity: number; unit_price: number; label?: string }>();
+  const [filterForm] = Form.useForm();
   const [editing, setEditing] = useState<ApiProduct>();
   const [formOpen, setFormOpen] = useState(false);
   const [detail, setDetail] = useState<ApiProductDetail>();
@@ -99,23 +121,49 @@ export default function ProductList() {
   const [selectedKeys, setSelectedKeys] = useState<Key[]>([]);
   const [exporting, setExporting] = useState(false);
   const [params, setParams] = useState<ProductQueryParams>({});
-  const [categoryOptions, setCategoryOptions] = useState<Array<{ value: number; label: string }>>(
-    [],
-  );
   const [categoryTree, setCategoryTree] = useState<CategoryTree[]>([]);
   const [tagOptions, setTagOptions] = useState<Array<{ value: string; label: string }>>([]);
-  const { message } = App.useApp();
+  const [tiersByProduct, setTiersByProduct] = useState<Record<number, PriceTier[]>>({});
+  const tierCache = useRef<Record<number, PriceTier[]>>({});
+  const { message, modal } = App.useApp();
   const { settings } = useSettings();
+
+  /**
+   * The list payload carries only `min_price` / `moq`, but the design requires
+   * the first two price steps. Fetch tiers per visible row and cache them so
+   * paging back does not refetch.
+   */
+  const fetchProducts = useCallback(async (query: ProductQueryParams) => {
+    const response = await getProductList(query);
+    const missing = [...new Set(response.result.map((product) => product.id))].filter(
+      (id) => !(id in tierCache.current),
+    );
+    if (missing.length) {
+      for (const id of missing) tierCache.current[id] = [];
+      void Promise.all(
+        missing.map(async (id) => {
+          try {
+            tierCache.current[id] = await getPriceTiers(id);
+          } catch {
+            delete tierCache.current[id];
+          }
+        }),
+      ).then(() => setTiersByProduct({ ...tierCache.current }));
+    }
+    return response;
+  }, []);
+
   const { actionRef, defaultProTableProps } = useProTable<ApiProduct, ProductQueryParams>({
-    fetchData: getProductList,
+    fetchData: fetchProducts,
     headerTitle: 'Products',
   });
+
+  const categoryTreeData = useMemo(() => toCategoryTreeOptions(categoryTree), [categoryTree]);
 
   const loadOptions = useCallback(async () => {
     const [tree, tags] = await Promise.all([getCategoryTree(true), getTagList({ per_page: 100 })]);
     return {
       tree,
-      categories: flattenCategories(tree),
       tags: tags.result.map((tag) => ({ value: tag.name, label: tag.name })),
     };
   }, []);
@@ -125,7 +173,6 @@ export default function ProductList() {
     loadOptions()
       .then((options) => {
         if (!active) return;
-        setCategoryOptions(options.categories);
         setCategoryTree(options.tree);
         setTagOptions(options.tags);
       })
@@ -141,12 +188,20 @@ export default function ProductList() {
   }, [message, loadOptions]);
 
   const reload = async () => {
+    tierCache.current = {};
+    setTiersByProduct({});
     try {
       setStats(await getProductStats());
     } catch {
       void message.error('Unable to load product summary');
     }
     await actionRef.current?.reload();
+  };
+
+  const resetFilters = () => {
+    filterForm.resetFields();
+    setParams({});
+    actionRef.current?.setPageInfo?.({ current: 1 });
   };
 
   const perform = async (action: () => Promise<void>, success: string) => {
@@ -273,38 +328,67 @@ export default function ProductList() {
     }
   };
 
+  const confirmDelete = (product: ApiProduct) => {
+    modal.confirm({
+      title: `Delete ${product.name}?`,
+      content: 'This soft-deletes the product in pet-api.',
+      okText: 'Delete',
+      okButtonProps: { danger: true },
+      onOk: () => perform(() => deleteProduct(product.id), 'Product deleted'),
+    });
+  };
+
+  const priceLadder = (product: ApiProduct) => {
+    const steps = [...(tiersByProduct[product.id] ?? [])]
+      .sort((a, b) => a.min_quantity - b.min_quantity)
+      .slice(0, 2);
+    if (steps.length) {
+      return steps
+        .map((tier) => `${formatMoney(tier.unit_price, tier.currency)} / ${tier.min_quantity}+`)
+        .join(' · ');
+    }
+    return product.min_price != null
+      ? `${formatMoney(product.min_price, 'USD')} / ${product.moq}+`
+      : '—';
+  };
+
+  const hasFilters = Object.values(params).some((value) => value !== undefined && value !== '');
+
   const columns: ProColumns<ApiProduct>[] = [
     {
       title: 'Product',
       dataIndex: 'name',
-      width: 300,
+      width: 260,
       render: (_: unknown, product: ApiProduct) => (
-        <Space>
+        <div className="product-cell">
           <Avatar
+            className="product-cell__thumb"
             shape="square"
-            size={40}
+            size={36}
             src={mediaUrl(product.featured_image)}
             icon={<InboxOutlined />}
           />
-          <Space direction="vertical" size={0}>
-            <Space size={4}>
-              <a onClick={() => void openDetail(product)}>{product.name}</a>
-              {product.is_featured && <StarFilled style={{ color: 'var(--app-warning)' }} />}
-            </Space>
-            <Typography.Text type="secondary">{product.sku}</Typography.Text>
-          </Space>
-        </Space>
+          <div className="product-cell__body">
+            <span className="product-cell__name">
+              {product.name}
+              {product.is_featured && (
+                <StarFilled style={{ marginLeft: 6, color: 'var(--app-warning)' }} />
+              )}
+            </span>
+            <span className="product-cell__sku">{product.sku}</span>
+          </div>
+        </div>
       ),
     },
     {
       title: 'Categories',
       dataIndex: 'categories',
-      width: 200,
+      width: 170,
       render: (_: unknown, product: ApiProduct) =>
         product.categories.length ? (
           <Space size={4} wrap>
             {product.categories.map((category) => (
-              <Tag key={category.id} color="blue">
+              <Tag key={category.id} className="category-tag">
                 {category.name}
               </Tag>
             ))}
@@ -314,77 +398,73 @@ export default function ProductList() {
         ),
     },
     {
-      title: 'Price / MOQ',
+      title: 'Price ladder (MOQ)',
       dataIndex: 'min_price',
-      width: 160,
+      width: 190,
       render: (_: unknown, product: ApiProduct) => (
-        <Space direction="vertical" size={0}>
-          <Typography.Text style={{ fontVariantNumeric: 'tabular-nums' }}>
-            {product.min_price != null ? `From $${Number(product.min_price).toFixed(2)}` : '—'}
-          </Typography.Text>
-          <Typography.Text
-            type="secondary"
-            style={{ fontSize: 12, fontVariantNumeric: 'tabular-nums' }}
-          >
-            {`MOQ ${product.moq}+`}
-          </Typography.Text>
-        </Space>
+        <span className="price-ladder">{priceLadder(product)}</span>
       ),
     },
     {
       title: 'Status',
       dataIndex: 'status',
-      width: 120,
-      render: (_: unknown, product: ApiProduct) => (
-        <Tag color={PRODUCT_STATUS_META[product.status].color}>
-          {PRODUCT_STATUS_META[product.status].label}
-        </Tag>
-      ),
+      width: 100,
+      render: (_: unknown, product: ApiProduct) => {
+        const meta = PRODUCT_STATUS_META[product.status];
+        return <span className={`status-pill status-pill--${meta.tone}`}>{meta.label}</span>;
+      },
     },
     {
-      title: 'Created at',
+      title: 'Created',
       dataIndex: 'created_at',
-      width: 130,
+      width: 140,
       responsive: ['lg' as const],
-      render: (_: unknown, product: ApiProduct) =>
-        product.created_at ? (
-          <Typography.Text type="secondary" style={{ fontVariantNumeric: 'tabular-nums' }}>
-            {product.created_at.slice(0, 10)}
-          </Typography.Text>
-        ) : (
-          '—'
-        ),
+      render: (_: unknown, product: ApiProduct) => (
+        <span className="muted-time">{formatDateTime(product.created_at)}</span>
+      ),
     },
     {
       title: 'Actions',
       valueType: 'option' as const,
       key: 'actions',
-      width: 80,
+      width: 160,
       fixed: 'right' as const,
       render: (_: unknown, product: ApiProduct) => (
-        <RowActions
-          label={`Actions for ${product.name}`}
-          items={[
-            {
-              key: 'view',
-              label: 'View details',
-              onClick: () => void openDetail(product),
-            },
-            { key: 'edit', label: 'Edit', onClick: () => openEditor(product) },
-            {
-              key: 'duplicate',
-              label: 'Duplicate',
-              onClick: () =>
-                void perform(
-                  () => duplicateProduct(product.id).then(() => {}),
-                  'Product duplicated',
-                ),
-            },
-          ]}
-          deleteTitle={`Delete ${product.name}?`}
-          deleteContent="This soft-deletes the product in pet-api."
-          onDelete={() => perform(() => deleteProduct(product.id), 'Product deleted')}
-        />
+        <div className="table-inline-actions" onClick={(event) => event.stopPropagation()}>
+          <Button type="link" size="small" onClick={() => openEditor(product)}>
+            Edit
+          </Button>
+          <Button type="link" size="small" onClick={() => void openDetail(product)}>
+            Preview
+          </Button>
+          <Dropdown
+            trigger={['click']}
+            menu={{
+              items: [
+                {
+                  key: 'duplicate',
+                  label: 'Duplicate',
+                  onClick: () =>
+                    void perform(
+                      () => duplicateProduct(product.id).then(() => {}),
+                      'Product duplicated',
+                    ),
+                },
+                { type: 'divider' },
+                {
+                  key: 'delete',
+                  label: 'Delete',
+                  danger: true,
+                  onClick: () => confirmDelete(product),
+                },
+              ],
+            }}
+          >
+            <Button type="link" size="small">
+              More <DownOutlined />
+            </Button>
+          </Dropdown>
+        </div>
       ),
     },
   ];
@@ -392,7 +472,7 @@ export default function ProductList() {
   return (
     <PageContainer
       title="Products"
-      subTitle={`${stats.total} products in the catalog · ${stats.draft} drafts`}
+      subTitle={`${stats.total.toLocaleString()} products in the catalog · ${stats.draft.toLocaleString()} drafts`}
       extra={
         <Space>
           <Button icon={<DownloadOutlined />} loading={exporting} onClick={() => void exportCsv()}>
@@ -407,19 +487,34 @@ export default function ProductList() {
       <div className="section-stack">
         <Card styles={{ body: { padding: '8px 24px' } }}>
           <QueryFilter<ProductQueryParams>
+            form={filterForm}
+            className="list-query"
+            colon={false}
             defaultCollapsed
             span={{ xs: 24, sm: 12, md: 12, lg: 6, xl: 6, xxl: 6 }}
             labelWidth="auto"
+            submitter={{
+              searchConfig: { submitText: 'Query', resetText: 'Reset' },
+              render: (_: unknown, dom: ReactNode[]) => [dom[1], dom[0]],
+            }}
             onFinish={(values) => {
               setParams(values);
               actionRef.current?.setPageInfo?.({ current: 1 });
             }}
-            onReset={() => {
-              setParams({});
-              actionRef.current?.setPageInfo?.({ current: 1 });
-            }}
+            onReset={resetFilters}
           >
-            <ProFormText name="search" label="Search" placeholder="Name or SKU" />
+            <ProFormText name="search" label="Name or SKU" placeholder="Search name or SKU" />
+            <ProFormTreeSelect
+              name="category_id"
+              label="Category"
+              placeholder="All categories"
+              allowClear
+              fieldProps={{
+                treeData: categoryTreeData,
+                showSearch: true,
+                treeNodeFilterProp: 'title',
+              }}
+            />
             <ProFormSelect
               name="status"
               label="Status"
@@ -431,13 +526,6 @@ export default function ProductList() {
               label="Type"
               options={PRODUCT_TYPE_OPTIONS}
               placeholder="All types"
-            />
-            <ProFormSelect
-              name="category_id"
-              label="Category"
-              options={categoryOptions}
-              placeholder="All categories"
-              showSearch
             />
             <ProFormSelect
               name="is_featured"
@@ -472,12 +560,12 @@ export default function ProductList() {
             >
               Discontinue
             </Button>,
-            <Typography.Text key="count" type="secondary">
+            <span key="count" className="list-toolbar-count">
               {selectedKeys.length} selected
-            </Typography.Text>,
+            </span>,
           ]}
-          headerTitle={`${stats.total} products in total`}
-          scroll={{ x: 1100 }}
+          headerTitle={false}
+          scroll={{ x: 1020 }}
           defaultSize={
             settings.density === 'small'
               ? 'small'
@@ -492,8 +580,21 @@ export default function ProductList() {
           }}
           locale={{
             emptyText: (
-              <Empty description="No products match this view.">
-                <Button onClick={() => openEditor()}>New Product</Button>
+              <Empty
+                className="list-empty"
+                description={
+                  hasFilters
+                    ? 'No products match these filters.'
+                    : 'No products in the catalog yet.'
+                }
+              >
+                {hasFilters ? (
+                  <Button onClick={resetFilters}>Reset filters</Button>
+                ) : (
+                  <Button type="primary" onClick={() => openEditor()}>
+                    New product
+                  </Button>
+                )}
               </Empty>
             ),
           }}
@@ -529,7 +630,14 @@ export default function ProductList() {
                   { title: 'Slug', dataIndex: 'slug' },
                   {
                     title: 'Status',
-                    render: (_, product) => PRODUCT_STATUS_META[product.status].label,
+                    render: (_, product) => {
+                      const meta = PRODUCT_STATUS_META[product.status];
+                      return (
+                        <span className={`status-pill status-pill--${meta.tone}`}>
+                          {meta.label}
+                        </span>
+                      );
+                    },
                   },
                   { title: 'Type', render: (_, product) => PRODUCT_TYPE_LABEL[product.type] },
                   { title: 'Short description', dataIndex: 'short_description' },

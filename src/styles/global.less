@@ -6,10 +6,11 @@ body,
 body {
   margin: 0;
   font-family:
-    Inter,
+    'Inter',
+    'Noto Sans SC',
     -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
+    'PingFang SC',
+    'Microsoft YaHei',
     sans-serif;
 }
 *,
@@ -726,6 +727,191 @@ body {
   font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+/* Catalogue and inquiry lists — design/adminpro-design-docs §4 column specs. */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 1px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 20px;
+  white-space: nowrap;
+}
+.status-pill::before {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentcolor;
+  content: '';
+}
+.status-pill--active {
+  background: var(--app-primary-bg);
+  color: #368f79;
+}
+.status-pill--active::before {
+  background: var(--app-primary);
+}
+.status-pill--warning {
+  background: var(--app-warning-bg);
+  color: var(--app-warning);
+}
+.status-pill--info {
+  background: var(--app-info-bg);
+  color: var(--app-info);
+}
+.status-pill--danger {
+  background: var(--app-danger-bg);
+  color: var(--app-danger);
+}
+.status-pill--muted {
+  background: var(--app-hover);
+  color: var(--app-muted);
+}
+.product-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.product-cell__thumb {
+  flex: none;
+  border: 1px solid var(--app-border);
+  border-radius: 4px;
+  background: var(--app-surface);
+}
+.product-cell__body {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+}
+.product-cell__name {
+  overflow: hidden;
+  color: var(--app-text);
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.product-cell__sku {
+  color: var(--app-muted);
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-size: 11px;
+}
+.category-tag.ant-tag {
+  margin-inline-end: 0;
+  border: 0;
+  background: var(--app-info-bg);
+  color: var(--app-info);
+}
+.price-ladder {
+  color: var(--app-text);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.muted-time {
+  color: var(--app-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.table-inline-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.table-inline-actions .ant-btn-link {
+  height: 24px;
+  padding-inline: 4px;
+  font-size: 13px;
+}
+.inquiry-customer {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+}
+.inquiry-customer__company {
+  overflow: hidden;
+  color: var(--app-text);
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.inquiry-customer__contact {
+  overflow: hidden;
+  color: var(--app-muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.inquiry-qty,
+.inquiry-ref-price {
+  font-variant-numeric: tabular-nums;
+}
+.inquiry-ref-price {
+  text-align: right;
+  white-space: nowrap;
+}
+.inquiry-item-product {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.inquiry-item-product__body {
+  min-width: 0;
+}
+.inquiry-item-product__name {
+  display: block;
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.inquiry-item-product__sku {
+  display: block;
+  overflow: hidden;
+  color: var(--app-muted);
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.list-toolbar-count {
+  display: inline-flex;
+  align-items: center;
+  color: var(--app-muted);
+  font-size: 13px;
+}
+.list-empty {
+  padding: 24px 0;
+}
+/* QueryFilter's responsive `span` config hard-codes horizontal items; the design
+ * puts labels above the controls. Stack the item row without giving up the
+ * responsive column spans. */
+.list-query .ant-form-item-row {
+  display: block;
+}
+.list-query .ant-form-item-label {
+  display: block;
+  width: auto;
+  padding-bottom: 4px;
+  text-align: left;
+}
+.list-query .ant-form-item-label > label {
+  height: auto;
+}
+.list-query .ant-form-item-control {
+  width: 100%;
+}
+.list-query .ant-pro-query-filter-actions .ant-form-item-label {
+  display: none;
+}
+.list-query .ant-pro-query-filter-actions {
+  display: flex;
+  align-items: flex-end;
+  padding-bottom: 1px;
 }
 :focus-visible {
   outline: 2px solid var(--app-primary);

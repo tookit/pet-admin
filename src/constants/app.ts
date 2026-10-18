@@ -43,8 +43,9 @@ export const appTheme: ThemeConfig = {
     colorTextSecondary: '#7E787A',
     colorTextPlaceholder: '#BEBABB',
     colorBorderSecondary: '#EDEBEC',
+    // Design system §4 — the two webfonts are loaded in index.html.
     fontFamily:
-      "'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif",
+      "'Inter', 'Noto Sans SC', -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif",
   },
   components: {
     Layout: { headerHeight: 56 },

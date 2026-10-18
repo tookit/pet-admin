@@ -19,6 +19,10 @@ function ThemeSurface() {
     '--app-danger-bg': token.colorErrorBg,
     '--app-danger': token.colorError,
     '--app-success': token.colorSuccess,
+    '--app-warning': token.colorWarning,
+    '--app-warning-bg': token.colorWarningBg,
+    '--app-info': token.colorInfo,
+    '--app-info-bg': token.colorInfoBg,
   } as CSSProperties;
   return (
     <div className="app-surface" style={style}>

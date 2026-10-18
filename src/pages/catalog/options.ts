@@ -7,13 +7,15 @@ export const PRODUCT_STATUS_OPTIONS: Array<{ value: ProductStatus; label: string
   { value: 'archived', label: 'Archived' },
 ];
 
-// Status colors follow the semantic system in adminpro-design-docs/design.md §8:
-// green = on sale, gold = needs attention, default = neutral lifecycle states.
-export const PRODUCT_STATUS_META: Record<ProductStatus, { label: string; color: string }> = {
-  draft: { label: 'Draft', color: 'default' },
-  active: { label: 'Active', color: 'green' },
-  discontinued: { label: 'Discontinued', color: 'gold' },
-  archived: { label: 'Archived', color: 'default' },
+// Status colours follow design.md §8: mint = on sale, gold = needs attention,
+// neutral = lifecycle states. Rendered as light pill + dot, never a solid Tag.
+export type StatusTone = 'active' | 'warning' | 'muted' | 'danger' | 'info';
+
+export const PRODUCT_STATUS_META: Record<ProductStatus, { label: string; tone: StatusTone }> = {
+  draft: { label: 'Draft', tone: 'muted' },
+  active: { label: 'Active', tone: 'active' },
+  discontinued: { label: 'Discontinued', tone: 'warning' },
+  archived: { label: 'Archived', tone: 'muted' },
 };
 
 export const PRODUCT_TYPE_OPTIONS: Array<{ value: ProductType; label: string }> = [
