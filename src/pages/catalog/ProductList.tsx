@@ -13,12 +13,9 @@ import {
   PageContainer,
   ProDescriptions,
   ProFormSelect,
-  ProFormSwitch,
   ProFormText,
-  ProFormTextArea,
   ProTable,
   QueryFilter,
-  DrawerForm,
 } from '@ant-design/pro-components';
 import {
   App,
@@ -42,7 +39,6 @@ import { useCallback, useEffect, useState, type Key } from 'react';
 import dayjs from 'dayjs';
 import {
   addPriceTier,
-  createProduct,
   deletePriceTier,
   deleteProduct,
   duplicateProduct,
@@ -68,11 +64,10 @@ import type {
   ApiMedia,
   ApiProduct,
   ApiProductDetail,
+  CategoryTree,
   PriceTier,
-  ProductCreateParams,
   ProductQueryParams,
   ProductStatus,
-  ProductType,
 } from '@/types/api';
 import {
   FEATURED_OPTIONS,
@@ -81,32 +76,7 @@ import {
   PRODUCT_TYPE_LABEL,
   PRODUCT_TYPE_OPTIONS,
 } from './options';
-
-interface ProductFormValues {
-  sku: string;
-  name: string;
-  slug?: string;
-  short_description?: string;
-  description?: string;
-  status: ProductStatus;
-  type: ProductType;
-  is_featured: boolean;
-  category_ids: number[];
-  tags: string[];
-}
-
-const DEFAULT_PRODUCT: ProductFormValues = {
-  sku: '',
-  name: '',
-  slug: '',
-  short_description: '',
-  description: '',
-  status: 'draft',
-  type: 'physical',
-  is_featured: false,
-  category_ids: [],
-  tags: [],
-};
+import ProductForm from './ProductForm';
 
 const EMPTY_STATS: ProductStats = { total: 0, active: 0, draft: 0, archived: 0 };
 
@@ -114,10 +84,9 @@ const formatMoney = (value: number | null | undefined, currency = 'USD') =>
   value == null ? '—' : `${currency} ${Number(value).toFixed(2)}`;
 
 export default function ProductList() {
-  const [form] = Form.useForm<ProductFormValues>();
   const [tierForm] = Form.useForm<{ min_quantity: number; unit_price: number; label?: string }>();
   const [editing, setEditing] = useState<ApiProduct>();
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
   const [detail, setDetail] = useState<ApiProductDetail>();
   const [detailLoading, setDetailLoading] = useState(false);
   const [tiers, setTiers] = useState<PriceTier[]>([]);
@@ -133,6 +102,7 @@ export default function ProductList() {
   const [categoryOptions, setCategoryOptions] = useState<Array<{ value: number; label: string }>>(
     [],
   );
+  const [categoryTree, setCategoryTree] = useState<CategoryTree[]>([]);
   const [tagOptions, setTagOptions] = useState<Array<{ value: string; label: string }>>([]);
   const { message } = App.useApp();
   const { settings } = useSettings();
@@ -144,6 +114,7 @@ export default function ProductList() {
   const loadOptions = useCallback(async () => {
     const [tree, tags] = await Promise.all([getCategoryTree(true), getTagList({ per_page: 100 })]);
     return {
+      tree,
       categories: flattenCategories(tree),
       tags: tags.result.map((tag) => ({ value: tag.name, label: tag.name })),
     };
@@ -155,6 +126,7 @@ export default function ProductList() {
       .then((options) => {
         if (!active) return;
         setCategoryOptions(options.categories);
+        setCategoryTree(options.tree);
         setTagOptions(options.tags);
       })
       .catch(() => void message.error('Unable to load categories and tags'));
@@ -234,24 +206,7 @@ export default function ProductList() {
 
   const openEditor = (product?: ApiProduct) => {
     setEditing(product);
-    form.resetFields();
-    form.setFieldsValue(
-      product
-        ? {
-            sku: product.sku,
-            name: product.name,
-            slug: product.slug ?? '',
-            short_description: product.short_description ?? '',
-            description: '',
-            status: product.status,
-            type: product.type,
-            is_featured: product.is_featured,
-            category_ids: product.categories.map((category) => category.id),
-            tags: product.tags.map((tag) => tag.name),
-          }
-        : DEFAULT_PRODUCT,
-    );
-    setDrawerOpen(true);
+    setFormOpen(true);
   };
 
   const openDetail = async (product: ApiProduct) => {
@@ -545,86 +500,16 @@ export default function ProductList() {
         />
       </div>
 
-      <DrawerForm<ProductFormValues>
-        title={editing ? 'Edit Product' : 'New Product'}
-        width={640}
-        form={form}
-        open={drawerOpen}
-        onOpenChange={setDrawerOpen}
-        initialValues={DEFAULT_PRODUCT}
-        submitter={{
-          searchConfig: {
-            submitText: editing ? 'Save Changes' : 'Create Product',
-            resetText: 'Cancel',
-          },
-        }}
-        onFinish={async (values) => {
-          const payload: ProductCreateParams = {
-            sku: values.sku,
-            name: values.name,
-            slug: values.slug || null,
-            short_description: values.short_description || null,
-            description: values.description || null,
-            status: values.status,
-            type: values.type,
-            is_featured: values.is_featured,
-            category_ids: values.category_ids ?? [],
-            tags: values.tags ?? [],
-          };
-          try {
-            if (editing) {
-              await updateProduct(editing.id, payload);
-            } else {
-              await createProduct(payload);
-            }
-            await reload();
-            void message.success(editing ? 'Product updated' : 'Product created');
-            return true;
-          } catch {
-            void message.error(
-              editing
-                ? 'Unable to update product'
-                : 'Unable to create product. Check the SKU and slug.',
-            );
-            return false;
-          }
-        }}
-      >
-        <ProFormText name="sku" label="SKU" rules={[{ required: true, whitespace: true }]} />
-        <ProFormText name="name" label="Name" rules={[{ required: true, whitespace: true }]} />
-        <ProFormText
-          name="slug"
-          label="Slug"
-          placeholder="Generated from the name when left empty"
-          rules={[{ pattern: /^[a-z0-9]+(?:-[a-z0-9]+)*$/, message: 'Use lowercase kebab-case' }]}
+      {formOpen && (
+        <ProductForm
+          key={editing?.id ?? 'new'}
+          product={editing}
+          categoryTree={categoryTree}
+          tagOptions={tagOptions}
+          onClose={() => setFormOpen(false)}
+          onSaved={reload}
         />
-        <ProFormTextArea
-          name="short_description"
-          label="Short description"
-          fieldProps={{ maxLength: 500, showCount: true }}
-        />
-        <ProFormTextArea name="description" label="Description" fieldProps={{ rows: 5 }} />
-        <Space size={16} style={{ display: 'flex' }} align="start">
-          <ProFormSelect name="status" label="Status" options={PRODUCT_STATUS_OPTIONS} />
-          <ProFormSelect name="type" label="Type" options={PRODUCT_TYPE_OPTIONS} />
-          <ProFormSwitch name="is_featured" label="Featured" />
-        </Space>
-        <ProFormSelect
-          name="category_ids"
-          label="Categories"
-          mode="multiple"
-          options={categoryOptions}
-          showSearch
-          placeholder="Assign one or more categories"
-        />
-        <ProFormSelect
-          name="tags"
-          label="Tags"
-          mode="tags"
-          options={tagOptions}
-          placeholder="Type a tag and press Enter"
-        />
-      </DrawerForm>
+      )}
 
       <Drawer
         title={detail?.name ?? 'Product details'}
