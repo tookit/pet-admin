@@ -8,6 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 pnpm install
 pnpm dev            # Vite dev server
 pnpm build          # tsc --noEmit && vite build
+pnpm deploy         # build, then wrangler deploy (Workers static assets)
 pnpm type-check     # tsc --noEmit
 pnpm lint           # eslint .
 pnpm lint:fix

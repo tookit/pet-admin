@@ -20,6 +20,7 @@ Use pnpm, pinned in `package.json`, and retain `pnpm-lock.yaml`.
 - `pnpm dev` — start Vite with hot reload; use the printed local URL.
 - `pnpm build` — type-check and build to `dist/`.
 - `pnpm preview` — serve the production build locally.
+- `pnpm deploy` — build and deploy `dist/` to Cloudflare Workers (`wrangler.jsonc`).
 - `pnpm type-check` — run TypeScript without emitting files.
 - `pnpm lint` / `pnpm lint:fix` — check or autofix ESLint issues.
 - `pnpm format:check` / `pnpm format` — check or apply Prettier formatting.

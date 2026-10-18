@@ -38,6 +38,7 @@ Sign in with a real pet-api account. The default `.env.example` points at
 | `pnpm dev`          | Vite dev server with HMR           |
 | `pnpm build`        | Type-check, then build to `dist/`  |
 | `pnpm preview`      | Serve the built `dist/` locally    |
+| `pnpm deploy`       | Build, then deploy to Cloudflare   |
 | `pnpm type-check`   | `tsc --noEmit`                     |
 | `pnpm lint`         | ESLint over the repo               |
 | `pnpm lint:fix`     | ESLint with autofix                |
@@ -45,6 +46,29 @@ Sign in with a real pet-api account. The default `.env.example` points at
 | `pnpm format:check` | Prettier, check only (CI-friendly) |
 
 `pnpm build` runs `tsc --noEmit` first, so type errors fail the build.
+
+## Deploying to Cloudflare
+
+`wrangler.jsonc` publishes `dist/` as Workers static assets with
+`not_found_handling: "single-page-application"`, so react-router deep links such
+as `/products/12` fall back to `index.html` instead of 404ing.
+
+1. Log in once: `pnpm exec wrangler login` (or set `CLOUDFLARE_API_TOKEN` and
+   `CLOUDFLARE_ACCOUNT_ID` in CI).
+2. Point the build at the public API. `VITE_API_BASE_URL` is baked in at build
+   time, so a production build needs the deployed pet-api origin, e.g. in
+   `.env.production` (gitignored):
+   ```bash
+   VITE_API_BASE_URL=https://api.example.com/api/v1
+   ```
+3. Deploy: `pnpm deploy` (`pnpm build && wrangler deploy`).
+4. Allow the portal origin in pet-api's CORS list (`CORS_ORIGINS`, a JSON array
+   or comma-separated string), or login and every API call fail in the browser.
+
+Media URLs are root-relative (`/local/...`); they resolve against the API origin,
+so pet-api or the proxy in front of it must serve `/local/...` publicly. A custom
+domain goes in `wrangler.jsonc` as a commented `routes` entry. To preview the
+config without deploying, run `pnpm exec wrangler deploy --dry-run`.
 
 ## How it fits together
 

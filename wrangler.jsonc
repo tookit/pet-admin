@@ -1,0 +1,12 @@
+{
+  // Static SPA: Cloudflare Workers serves dist/, and any unknown path falls back
+  // to index.html so react-router deep links work.
+  "name": "pet-portal",
+  "compatibility_date": "2026-10-18",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application",
+  },
+  // Custom domain (needs the zone on the same Cloudflare account):
+  // "routes": [{ "pattern": "admin.petpallets.com", "custom_domain": true }]
+}
