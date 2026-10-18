@@ -1,0 +1,24 @@
+# Normalize text files to LF in the repository and in the working tree.
+# `core.autocrlf=true` is common on Windows and would otherwise check these out as
+# CRLF, which fails `pnpm format:check` (Prettier is configured for endOfLine: lf).
+* text=auto eol=lf
+
+# Binary assets — never normalize
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.avif binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+
+# Shell scripts must keep LF to stay runnable
+*.sh text eol=lf
+
+# Generated files — collapse in diffs and language stats
+dist/** linguist-generated=true
+pnpm-lock.yaml linguist-generated=true
