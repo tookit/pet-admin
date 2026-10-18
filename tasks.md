@@ -10,7 +10,7 @@
 - Dashboard / Security 仍使用 mock 数据
 - 用户模型直接对齐 pet-api 字段（`username` / `firstname` / `lastname` / `roles` / `status: 0|1|2`）
 
-不在范围：products、categories、tags、quotes、RBAC 页面、媒体上传。
+T6–T9 追加范围（已完成）：products、categories、tags、quotes、RBAC、媒体与属性。Dashboard / Security 仍为 mock。
 
 ## T1 仓库基线与 HTTP 客户端
 
