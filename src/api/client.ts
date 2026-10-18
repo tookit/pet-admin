@@ -40,7 +40,7 @@ export function clearSession(): void {
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
-  params?: Record<string, string | number | boolean | null | undefined>;
+  params?: object;
   signal?: AbortSignal;
 }
 
@@ -49,7 +49,9 @@ function buildUrl(path: string, params?: RequestOptions['params']): string {
   if (!params) return url;
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== null && value !== '') query.set(key, String(value));
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+      query.set(key, String(value));
+    }
   }
   const search = query.toString();
   return search ? `${url}?${search}` : url;

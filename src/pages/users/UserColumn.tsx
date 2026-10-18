@@ -1,31 +1,29 @@
-import { Avatar, Badge, Space, Tag } from 'antd';
+import { Avatar, Badge, Space, Tag, Typography } from 'antd';
 import type { ProColumns } from '@ant-design/pro-components';
 import type { ComponentProps } from 'react';
-import type { User } from '@/types';
+import type { ApiUser } from '@/types/api';
+import { displayName } from '@/utils/user';
+import { STATUS_META } from './options';
 import { UserActions } from './UserActions';
+
 export function useUserTableColumns(
   actions: Omit<ComponentProps<typeof UserActions>, 'record'>,
-): ProColumns<User>[] {
+): ProColumns<ApiUser>[] {
   return [
     { title: '#', dataIndex: 'id', width: 64, responsive: ['lg'] },
     {
       title: 'User',
-      dataIndex: 'name',
-      width: 200,
-      sorter: (a, b) => a.name.localeCompare(b.name),
+      dataIndex: 'username',
+      width: 220,
       render: (_, user) => (
         <Space>
-          <Avatar
-            src={user.avatar}
-            style={{ background: 'var(--app-primary-bg)', color: 'var(--app-primary)' }}
-          >
-            {user.name
-              .split(' ')
-              .map((word) => word[0])
-              .slice(0, 2)
-              .join('')}
+          <Avatar src={user.avatar} style={{ background: 'var(--app-primary-bg)' }}>
+            {displayName(user).slice(0, 2).toUpperCase()}
           </Avatar>
-          <a onClick={() => actions.onView(user)}>{user.name}</a>
+          <Space direction="vertical" size={0}>
+            <a onClick={() => actions.onView(user)}>{displayName(user)}</a>
+            <Typography.Text type="secondary">@{user.username}</Typography.Text>
+          </Space>
         </Space>
       ),
     },
@@ -38,40 +36,37 @@ export function useUserTableColumns(
       responsive: ['md'],
     },
     {
-      title: 'Role',
-      dataIndex: 'role',
-      width: 100,
-      render: (_, user) => (
-        <Tag color={user.role === 'admin' ? 'red' : user.role === 'editor' ? 'blue' : 'default'}>
-          {user.role[0].toUpperCase() + user.role.slice(1)}
-        </Tag>
-      ),
+      title: 'Roles',
+      dataIndex: 'roles',
+      width: 160,
+      render: (_, user) =>
+        user.roles.length ? (
+          <Space size={4} wrap>
+            {user.roles.map((role) => (
+              <Tag key={role.id} color={role.slug === 'admin' ? 'red' : 'blue'}>
+                {role.name}
+              </Tag>
+            ))}
+          </Space>
+        ) : (
+          '—'
+        ),
     },
     {
       title: 'Status',
       dataIndex: 'status',
       width: 115,
-      render: (_, user) => (
-        <Badge
-          status={
-            user.status === 'active'
-              ? 'success'
-              : user.status === 'suspended'
-                ? 'error'
-                : user.status === 'inactive'
-                  ? 'default'
-                  : 'warning'
-          }
-          text={user.status[0].toUpperCase() + user.status.slice(1)}
-        />
-      ),
+      render: (_, user) => {
+        const meta = STATUS_META[user.status];
+        return <Badge status={meta.badge} text={meta.label} />;
+      },
     },
     {
       title: 'Created at',
-      dataIndex: 'createdAt',
+      dataIndex: 'created_at',
       width: 130,
       responsive: ['lg'],
-      sorter: (a, b) => a.createdAt.localeCompare(b.createdAt),
+      render: (_, user) => (user.created_at ? user.created_at.slice(0, 10) : '—'),
     },
     {
       title: 'Actions',

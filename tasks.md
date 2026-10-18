@@ -35,14 +35,14 @@
 
 ## T3 用户管理对接
 
-- [ ] `src/api/modules/user.api.ts` 改为真实请求，保留 `PaginatedResponse<T>` 契约
-- [ ] 分页映射 `current/pageSize` → `page/per_page`
-- [ ] 筛选使用 API 支持的 `search`、`status`、`role_id`（移除仅前端支持的 name/email/role 筛选）
-- [ ] 表格列/操作/表单对齐 API 字段：`username`、`firstname`、`lastname`、`roles`、`status`、`created_at`
-- [ ] 新增用户表单包含 `username/email/password`，编辑仅提交 API 允许的字段
-- [ ] 删除用户走真实接口；无法映射的“禁用/批量”操作移除
-- [ ] 概览卡片改用真实总数/各状态计数
-- [ ] `pnpm type-check`、`pnpm lint` 通过
+- [x] `src/api/modules/user.api.ts` 改为真实请求，保留 `PaginatedResponse<T>` 契约
+- [x] 分页映射 `current/pageSize` → `page/per_page`
+- [x] 筛选使用 API 支持的 `search`、`status`、`role_id`（移除仅前端支持的 name/email/role 筛选）
+- [x] 表格列/操作/表单对齐 API 字段：`username`、`firstname`、`lastname`、`roles`、`status`、`created_at`
+- [x] 新增用户表单包含 `username/email/password`，编辑仅提交 API 允许的字段
+- [x] 删除用户走真实接口；无法映射的“禁用/批量”操作移除
+- [x] 概览卡片改用真实总数/各状态计数
+- [x] `pnpm type-check`、`pnpm lint` 通过
 
 验收：列表分页、搜索、状态筛选、创建、编辑、删除均命中 pet-api；错误有 toast。
 

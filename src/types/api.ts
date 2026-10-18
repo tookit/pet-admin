@@ -44,10 +44,10 @@ export interface RegisterParams {
 
 /** Fields `PUT /users/{id}` and `PATCH /me` accept. */
 export interface UserUpdateParams {
-  firstname?: string;
-  lastname?: string;
-  phone?: string;
-  avatar?: string;
+  firstname?: string | null;
+  lastname?: string | null;
+  phone?: string | null;
+  avatar?: string | null;
   gender?: string;
 }
 

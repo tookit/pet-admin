@@ -1,7 +1,20 @@
-export const ROLE_OPTIONS = ['admin', 'editor', 'viewer'].map((value) => ({
-  value,
-  label: value[0].toUpperCase() + value.slice(1),
-}));
-export const STATUS_OPTIONS = ['active', 'inactive', 'suspended', 'pending', 'invited'].map(
-  (value) => ({ value, label: value[0].toUpperCase() + value.slice(1) }),
-);
+import type { ApiUserStatus } from '@/types/api';
+
+export const STATUS_OPTIONS = [
+  { value: 1, label: 'Active' },
+  { value: 0, label: 'Inactive' },
+  { value: 2, label: 'Frozen' },
+];
+
+export const STATUS_META: Record<ApiUserStatus, { label: string; badge: 'success' | 'default' | 'error' }> =
+  {
+    0: { label: 'Inactive', badge: 'default' },
+    1: { label: 'Active', badge: 'success' },
+    2: { label: 'Frozen', badge: 'error' },
+  };
+
+export const GENDER_OPTIONS = [
+  { value: 'male', label: 'Male' },
+  { value: 'female', label: 'Female' },
+  { value: 'other', label: 'Other' },
+];
