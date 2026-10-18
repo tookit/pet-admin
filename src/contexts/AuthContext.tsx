@@ -9,6 +9,7 @@ interface AuthContextValue {
   user: ApiUser | null;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
+  updateUser: (user: ApiUser) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -45,7 +46,15 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setUser(null);
   }, []);
 
-  const value = useMemo<AuthContextValue>(() => ({ user, login, logout }), [user, login, logout]);
+  const updateUser = useCallback((nextUser: ApiUser) => {
+    sessionStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(nextUser));
+    setUser(nextUser);
+  }, []);
+
+  const value = useMemo<AuthContextValue>(
+    () => ({ user, login, logout, updateUser }),
+    [user, login, logout, updateUser],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

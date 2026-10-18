@@ -48,11 +48,11 @@
 
 ## T4 个人资料对接
 
-- [ ] `profile.api.ts` 改为 `GET /me` / `PATCH /me`
-- [ ] ProfilePage 展示真实 username、邮箱、姓名、电话、头像、注册时间
-- [ ] 保存时仅提交 `firstname/lastname/phone/avatar`，成功后刷新展示
-- [ ] 非 API 字段（公司、职位、社交链接等）明确保留为本地偏好或移除，不伪装成已保存
-- [ ] `pnpm type-check`、`pnpm lint` 通过
+- [x] `profile.api.ts` 改为 `GET /me` / `PATCH /me`
+- [x] ProfilePage 展示真实 username、邮箱、姓名、电话、头像、注册时间
+- [x] 保存时仅提交 `firstname/lastname/phone/avatar`，成功后刷新展示
+- [x] 非 API 字段（公司、职位、社交链接等）明确保留为本地偏好或移除，不伪装成已保存
+- [x] `pnpm type-check`、`pnpm lint` 通过
 
 验收：修改姓名/电话后刷新页面仍保留；页面不再显示固定 mock 姓名。
 
