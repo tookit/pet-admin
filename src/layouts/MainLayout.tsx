@@ -12,6 +12,7 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { APP_CONFIG } from '@/constants/app';
 import TemplateSettingsDrawer from '@/components/TemplateSettingsDrawer';
 import { useAuth } from '@/contexts/AuthContext';
+import { displayName } from '@/utils/user';
 import { useSettings } from '@/contexts/SettingsContext';
 import { protectedRoutes } from '@/routes/routeDefinitions';
 const menuRoutes = protectedRoutes
@@ -97,7 +98,7 @@ export default function MainLayout() {
           />,
         ]}
         avatarProps={{
-          title: user?.name,
+          title: displayName(user),
           render: () => (
             <Dropdown
               trigger={['click']}
@@ -134,9 +135,9 @@ export default function MainLayout() {
                     size={32}
                     style={{ background: token.colorPrimaryBg, color: token.colorPrimary }}
                   >
-                    {user?.name.slice(0, 2).toUpperCase()}
+                    {displayName(user).slice(0, 2).toUpperCase()}
                   </Avatar>
-                  <span className="header-user-name">{user?.name}</span>
+                  <span className="header-user-name">{displayName(user)}</span>
                 </Space>
               </Button>
             </Dropdown>

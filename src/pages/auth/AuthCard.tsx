@@ -1,8 +1,9 @@
 import { LockOutlined, MailOutlined, UserOutlined } from '@ant-design/icons';
 import { App, Button, Form, Input, Typography } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
+import { ApiError } from '@/api/client';
+import { registerAPI } from '@/api/modules/auth.api';
 import { useAuth } from '@/contexts/AuthContext';
-import { mockApi } from '@/mocks/api';
 import { useSettings } from '@/contexts/SettingsContext';
 
 interface AuthCardProps {
@@ -10,10 +11,13 @@ interface AuthCardProps {
 }
 
 interface AuthFormValues {
-  name?: string;
-  email: string;
+  username: string;
+  email?: string;
   password: string;
 }
+
+const errorMessage = (error: unknown) =>
+  error instanceof ApiError ? error.message : 'Unable to reach the server. Please try again.';
 
 export default function AuthCard({ mode }: AuthCardProps) {
   const navigate = useNavigate();
@@ -24,10 +28,23 @@ export default function AuthCard({ mode }: AuthCardProps) {
   const { settings } = useSettings();
 
   const submit = async (values: AuthFormValues) => {
-    if (isLogin) await login(values.email);
-    else await mockApi.register(values.name ?? 'New user', values.email);
-    void message.success(isLogin ? 'Signed in with mock data.' : 'Account created with mock data.');
-    void navigate(isLogin ? settings.landingPage : '/login');
+    try {
+      if (isLogin) {
+        await login(values.username, values.password);
+        void message.success('Signed in successfully.');
+        void navigate(settings.landingPage);
+      } else {
+        await registerAPI({
+          username: values.username,
+          email: values.email ?? '',
+          password: values.password,
+        });
+        void message.success('Account created. Please sign in.');
+        void navigate('/login');
+      }
+    } catch (error) {
+      void message.error(errorMessage(error));
+    }
   };
   return (
     <div className={isLogin ? 'login-page' : 'page-register'}>
@@ -38,8 +55,8 @@ export default function AuthCard({ mode }: AuthCardProps) {
         </Typography.Title>
         <Typography.Paragraph type="secondary">
           {isLogin
-            ? 'Use any valid email and password to enter the local demo.'
-            : 'Registration is local only; no account is sent to a server.'}
+            ? 'Sign in with your Petpallets admin account.'
+            : 'Register a new account, then sign in.'}
         </Typography.Paragraph>
       </div>
       <Form
@@ -48,24 +65,32 @@ export default function AuthCard({ mode }: AuthCardProps) {
         onFinish={(values) => void submit(values)}
         requiredMark={false}
       >
+        <Form.Item
+          name="username"
+          label="Username"
+          rules={[{ required: true, min: 3, message: 'Use at least 3 characters' }]}
+        >
+          <Input prefix={<UserOutlined />} size="large" autoComplete="username" />
+        </Form.Item>
         {!isLogin && (
-          <Form.Item name="name" label="Name" rules={[{ required: true, message: 'Enter a name' }]}>
-            <Input prefix={<UserOutlined />} size="large" />
+          <Form.Item
+            name="email"
+            label="Email"
+            rules={[{ required: true, type: 'email', message: 'Enter a valid email' }]}
+          >
+            <Input prefix={<MailOutlined />} size="large" autoComplete="email" />
           </Form.Item>
         )}
         <Form.Item
-          name="email"
-          label="Email"
-          rules={[{ required: true, type: 'email', message: 'Enter a valid email' }]}
-        >
-          <Input prefix={<MailOutlined />} size="large" placeholder="admin@example.com" />
-        </Form.Item>
-        <Form.Item
           name="password"
           label="Password"
-          rules={[{ required: true, min: 6, message: 'Use at least 6 characters' }]}
+          rules={[{ required: true, min: 8, message: 'Use at least 8 characters' }]}
         >
-          <Input.Password prefix={<LockOutlined />} size="large" />
+          <Input.Password
+            prefix={<LockOutlined />}
+            size="large"
+            autoComplete={isLogin ? 'current-password' : 'new-password'}
+          />
         </Form.Item>
         <Button htmlType="submit" type="primary" size="large" block>
           {isLogin ? 'Sign in' : 'Create account'}

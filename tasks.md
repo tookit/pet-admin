@@ -24,12 +24,12 @@
 
 ## T2 认证对接
 
-- [ ] `AuthContext` 改为保存 `access_token` + `ApiUser`
-- [ ] 登录调用 `POST /login`，随后 `GET /me` 取用户；失败显示 API 错误
-- [ ] 注册调用 `POST /register`，成功后回到登录页
-- [ ] 登录表单字段改为 `username` + `password`（API 以 username 登录）
-- [ ] 登出清理 token 和用户；401 自动跳转登录页
-- [ ] `pnpm type-check`、`pnpm lint` 通过
+- [x] `AuthContext` 改为保存 `access_token` + `ApiUser`
+- [x] 登录调用 `POST /login`，随后 `GET /me` 取用户；失败显示 API 错误
+- [x] 注册调用 `POST /register`，成功后回到登录页
+- [x] 登录表单字段改为 `username` + `password`（API 以 username 登录）
+- [x] 登出清理 token 和用户；401 自动跳转登录页
+- [x] `pnpm type-check`、`pnpm lint` 通过
 
 验收：错误密码显示后端错误；登录后刷新页面仍保持会话；登出后访问受保护路由跳转 `/login`。
 

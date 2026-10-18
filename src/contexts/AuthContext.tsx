@@ -1,43 +1,47 @@
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import type { PropsWithChildren } from 'react';
+import { clearSession } from '@/api/client';
+import { getMeAPI, loginAPI } from '@/api/modules/auth.api';
 import { STORAGE_KEYS } from '@/constants/app';
-import { mockApi } from '@/mocks/api';
-
-export interface AuthUser {
-  name: string;
-  email: string;
-}
+import type { ApiUser } from '@/types/api';
 
 interface AuthContextValue {
-  user: AuthUser | null;
-  login: (email: string) => Promise<void>;
+  user: ApiUser | null;
+  login: (username: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 /** Session storage is user-writable, so treat its contents as untrusted. */
-function readStoredUser(): AuthUser | null {
+function readStoredUser(): ApiUser | null {
   try {
     const stored = sessionStorage.getItem(STORAGE_KEYS.USER);
-    return stored ? (JSON.parse(stored) as AuthUser) : null;
+    return stored ? (JSON.parse(stored) as ApiUser) : null;
   } catch {
-    sessionStorage.removeItem(STORAGE_KEYS.USER);
+    clearSession();
     return null;
   }
 }
 
 export function AuthProvider({ children }: PropsWithChildren) {
-  const [user, setUser] = useState<AuthUser | null>(readStoredUser);
+  const [user, setUser] = useState<ApiUser | null>(readStoredUser);
 
-  const login = useCallback(async (email: string) => {
-    const nextUser = await mockApi.login(email);
-    sessionStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(nextUser));
-    setUser(nextUser);
+  const login = useCallback(async (username: string, password: string) => {
+    const { access_token } = await loginAPI({ username, password });
+    sessionStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, access_token);
+    try {
+      const nextUser = await getMeAPI();
+      sessionStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(nextUser));
+      setUser(nextUser);
+    } catch (error) {
+      clearSession();
+      throw error;
+    }
   }, []);
 
   const logout = useCallback(() => {
-    sessionStorage.removeItem(STORAGE_KEYS.USER);
+    clearSession();
     setUser(null);
   }, []);
 
