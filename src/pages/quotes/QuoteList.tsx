@@ -18,6 +18,7 @@ import { useCallback, useState, type ReactNode } from 'react';
 import { deleteQuote, getQuote, getQuoteList } from '@/api/modules/quote.api';
 import { getProduct } from '@/api/modules/product.api';
 import { mediaUrl } from '@/api/modules/media.api';
+import { useFilterQuery } from '@/hooks/useFilterQuery';
 import { useProTable } from '@/hooks/useProTable';
 import { useSettings } from '@/contexts/SettingsContext';
 import { downloadCsv } from '@/utils/csv';
@@ -30,6 +31,13 @@ const formatDate = (value: string) => value.slice(0, 16).replace('T', ' ');
 const formatPrice = (value: number | null | undefined) =>
   value == null ? '—' : `$${Number(value).toFixed(2)}`;
 
+const decodeQuoteFilters = (search: URLSearchParams): QuoteQueryParams => ({
+  company: search.get('company') ?? undefined,
+  name: search.get('name') ?? undefined,
+  email: search.get('email') ?? undefined,
+  phone: search.get('phone') ?? undefined,
+});
+
 /**
  * Inquiries (design: adminpro-design-docs/inquiry.md), adapted to pet-api:
  * quotes have no status, country, reply endpoint or timeline, so the status
@@ -37,13 +45,18 @@ const formatPrice = (value: number | null | undefined) =>
  */
 export default function QuoteList() {
   const [filterForm] = Form.useForm();
-  const [params, setParams] = useState<QuoteQueryParams>({});
   const [detail, setDetail] = useState<ApiQuote>();
   const [detailLoading, setDetailLoading] = useState(false);
   const [products, setProducts] = useState<Record<number, ApiProductDetail>>({});
   const [exporting, setExporting] = useState(false);
   const { message } = App.useApp();
   const { settings } = useSettings();
+  const {
+    params,
+    apply: applyFilters,
+    clear: clearFilters,
+    hasFilters,
+  } = useFilterQuery<QuoteQueryParams>(filterForm, decodeQuoteFilters);
 
   const cacheProducts = useCallback(async (ids: number[]) => {
     const unique = [...new Set(ids)];
@@ -103,12 +116,9 @@ export default function QuoteList() {
   const productName = (id: number) => products[id]?.name ?? `Product #${id}`;
 
   const resetFilters = () => {
-    filterForm.resetFields();
-    setParams({});
+    clearFilters();
     actionRef.current?.setPageInfo?.({ current: 1 });
   };
-
-  const hasFilters = Object.values(params).some((value) => value !== undefined && value !== '');
 
   const intent = (quote: ApiQuote) => {
     const names = quote.items
@@ -235,7 +245,7 @@ export default function QuoteList() {
               render: (_: unknown, dom: ReactNode[]) => [dom[1], dom[0]],
             }}
             onFinish={(values) => {
-              setParams(values);
+              applyFilters(values);
               actionRef.current?.setPageInfo?.({ current: 1 });
             }}
             onReset={resetFilters}

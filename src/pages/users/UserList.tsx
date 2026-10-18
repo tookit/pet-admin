@@ -27,12 +27,13 @@ import {
   type UserStats,
 } from '@/api/modules/user.api';
 import { assignRoleToUser, getRoleList, removeRoleFromUser } from '@/api/modules/rbac.api';
+import { useFilterQuery } from '@/hooks/useFilterQuery';
 import { useProTable } from '@/hooks/useProTable';
 import { useSettings } from '@/contexts/SettingsContext';
 import MetricsRow from '@/components/MetricsRow';
 import { downloadCsv } from '@/utils/csv';
 import { displayName } from '@/utils/user';
-import type { ApiRole, ApiUser, UserUpdateParams } from '@/types/api';
+import type { ApiRole, ApiUser, ApiUserStatus, UserUpdateParams } from '@/types/api';
 import { useUserTableColumns } from './UserColumn';
 import { GENDER_OPTIONS, STATUS_META, STATUS_OPTIONS } from './options';
 
@@ -60,6 +61,14 @@ const DEFAULT_USER: UserFormValues = {
 
 const EMPTY_STATS: UserStats = { total: 0, active: 0, inactive: 0, frozen: 0 };
 
+const decodeUserFilters = (search: URLSearchParams): UserQueryParams => {
+  const status = search.get('status');
+  return {
+    search: search.get('search') ?? undefined,
+    status: status === null ? undefined : (Number(status) as ApiUserStatus),
+  };
+};
+
 const payloadFrom = (values: UserFormValues): UserUpdateParams => ({
   firstname: values.firstname || null,
   lastname: values.lastname || null,
@@ -70,11 +79,11 @@ const payloadFrom = (values: UserFormValues): UserUpdateParams => ({
 
 export default function UserList() {
   const [form] = Form.useForm<UserFormValues>();
+  const [filterForm] = Form.useForm();
   const [editing, setEditing] = useState<ApiUser>();
   const [viewing, setViewing] = useState<ApiUser>();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [stats, setStats] = useState<UserStats>(EMPTY_STATS);
-  const [params, setParams] = useState<UserQueryParams>({});
   const [selected, setSelected] = useState<Key[]>([]);
   const [busy, setBusy] = useState(false);
   const [roleUser, setRoleUser] = useState<ApiUser>();
@@ -83,6 +92,12 @@ export default function UserList() {
   const [roleSaving, setRoleSaving] = useState(false);
   const { message, modal } = App.useApp();
   const { settings } = useSettings();
+  const {
+    params,
+    apply: applyFilters,
+    clear: clearFilters,
+    hasFilters,
+  } = useFilterQuery<UserQueryParams>(filterForm, decodeUserFilters);
   const { actionRef, defaultProTableProps } = useProTable<ApiUser, UserQueryParams>({
     fetchData: getUserList,
     headerTitle: 'Users',
@@ -186,7 +201,6 @@ export default function UserList() {
   });
 
   const count = (value: number) => (stats.total ? Math.round((value / stats.total) * 100) : 0);
-  const hasFilters = Boolean(params.search || params.status !== undefined);
 
   const exportCsv = async () => {
     try {
@@ -261,15 +275,16 @@ export default function UserList() {
         />
         <Card styles={{ body: { padding: '8px 24px' } }}>
           <QueryFilter<UserQueryParams>
+            form={filterForm}
             defaultCollapsed={false}
             span={{ xs: 24, sm: 12, md: 12, lg: 6, xl: 6, xxl: 6 }}
             labelWidth="auto"
             onFinish={(values) => {
-              setParams(values);
+              applyFilters(values);
               actionRef.current?.setPageInfo?.({ current: 1 });
             }}
             onReset={() => {
-              setParams({});
+              clearFilters();
               actionRef.current?.setPageInfo?.({ current: 1 });
             }}
           >

@@ -60,6 +60,7 @@ import {
   setProductFeaturedImage,
   syncEntityMedia,
 } from '@/api/modules/media.api';
+import { useFilterQuery } from '@/hooks/useFilterQuery';
 import { useProTable } from '@/hooks/useProTable';
 import { useSettings } from '@/contexts/SettingsContext';
 import type {
@@ -70,6 +71,7 @@ import type {
   PriceTier,
   ProductQueryParams,
   ProductStatus,
+  ProductType,
 } from '@/types/api';
 import {
   FEATURED_OPTIONS,
@@ -104,6 +106,18 @@ const formatMoney = (value: number | null | undefined, currency = 'USD') =>
 const formatDateTime = (value: string | null) =>
   value ? value.slice(0, 16).replace('T', ' ') : '—';
 
+const decodeProductFilters = (search: URLSearchParams): ProductQueryParams => {
+  const featured = search.get('is_featured');
+  const categoryId = search.get('category_id');
+  return {
+    search: search.get('search') ?? undefined,
+    status: (search.get('status') as ProductStatus | null) ?? undefined,
+    type: (search.get('type') as ProductType | null) ?? undefined,
+    is_featured: featured === null ? undefined : featured === 'true',
+    category_id: categoryId === null ? undefined : Number(categoryId),
+  };
+};
+
 export default function ProductList() {
   const [tierForm] = Form.useForm<{ min_quantity: number; unit_price: number; label?: string }>();
   const [filterForm] = Form.useForm();
@@ -120,13 +134,18 @@ export default function ProductList() {
   const [stats, setStats] = useState<ProductStats>(EMPTY_STATS);
   const [selectedKeys, setSelectedKeys] = useState<Key[]>([]);
   const [exporting, setExporting] = useState(false);
-  const [params, setParams] = useState<ProductQueryParams>({});
   const [categoryTree, setCategoryTree] = useState<CategoryTree[]>([]);
   const [tagOptions, setTagOptions] = useState<Array<{ value: string; label: string }>>([]);
   const [tiersByProduct, setTiersByProduct] = useState<Record<number, PriceTier[]>>({});
   const tierCache = useRef<Record<number, PriceTier[]>>({});
   const { message, modal } = App.useApp();
   const { settings } = useSettings();
+  const {
+    params,
+    apply: applyFilters,
+    clear: clearFilters,
+    hasFilters,
+  } = useFilterQuery<ProductQueryParams>(filterForm, decodeProductFilters);
 
   /**
    * The list payload carries only `min_price` / `moq`, but the design requires
@@ -199,8 +218,7 @@ export default function ProductList() {
   };
 
   const resetFilters = () => {
-    filterForm.resetFields();
-    setParams({});
+    clearFilters();
     actionRef.current?.setPageInfo?.({ current: 1 });
   };
 
@@ -352,8 +370,6 @@ export default function ProductList() {
       : '—';
   };
 
-  const hasFilters = Object.values(params).some((value) => value !== undefined && value !== '');
-
   const columns: ProColumns<ApiProduct>[] = [
     {
       title: 'Product',
@@ -503,7 +519,7 @@ export default function ProductList() {
               render: (_: unknown, dom: ReactNode[]) => [dom[1], dom[0]],
             }}
             onFinish={(values) => {
-              setParams(values);
+              applyFilters(values);
               actionRef.current?.setPageInfo?.({ current: 1 });
             }}
             onReset={resetFilters}
