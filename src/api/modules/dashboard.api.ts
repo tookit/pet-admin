@@ -1,127 +1,133 @@
-import dayjs from 'dayjs';
-import { mockApi } from '@/mocks/api';
-import type { DailyPoint, DashboardView, Granularity, KpiMetric, SeriesPoint } from '@/types';
-
-export type MetricKey = 'revenue' | 'orders';
-
-const sum = (points: DailyPoint[], field: 'revenue' | 'orders' | 'visits') =>
-  points.reduce((total, point) => total + point[field], 0);
-
-/** Currency for the KPI tile and the axis; the chart tooltip formats the same way. */
-export const formatCurrency = (value: number) =>
-  value.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
-
-export const formatCompact = (value: number) =>
-  value.toLocaleString('en-US', { notation: 'compact', maximumFractionDigits: 0 });
-
-function bucket(points: DailyPoint[], granularity: Granularity): SeriesPoint[] {
-  const buckets = new Map<string, SeriesPoint>();
-  for (const point of points) {
-    const date = dayjs(point.date);
-    const start =
-      granularity === 'daily'
-        ? date
-        : granularity === 'weekly'
-          ? date.startOf('week')
-          : date.startOf('month');
-    const period = granularity === 'monthly' ? start.format('MMM YY') : start.format('MMM D');
-    const current = buckets.get(period) ?? { period, revenue: 0, orders: 0 };
-    current.revenue += point.revenue;
-    current.orders += point.orders;
-    buckets.set(period, current);
-  }
-  return [...buckets.values()];
-}
-
-/** Signed change between two windows, as a percentage rendered by the KPI tile. */
-function trend(current: number, previous: number, caption: string): KpiMetric['trend'] {
-  if (!previous) return { text: '—', caption, direction: 'flat' };
-  const change = ((current - previous) / previous) * 100;
-  const direction = change > 0.5 ? 'up' : change < -0.5 ? 'down' : 'flat';
-  return {
-    text: `${change > 0 ? '+' : ''}${change.toFixed(1)}%`,
-    caption,
-    direction,
-  };
-}
+import dayjs, { type Dayjs } from 'dayjs';
+import { getProductList, getProductStats } from '@/api/modules/product.api';
+import { getQuoteList } from '@/api/modules/quote.api';
+import type { ApiQuote } from '@/types/api';
 
 /**
- * Aggregates the raw daily series into the view the dashboard renders. Keeps the
- * `DashboardView` contract so a real backend can replace it wholesale.
+ * Dashboard aggregation over real data: inquiries from `/quotes`, catalog
+ * figures from `/products` (design: adminpro-design-docs/dashboard.md).
+ * The quote endpoint has no date filter, so we page through and bucket locally;
+ * `MAX_PAGES` caps the work — bump it when quote volume outgrows 1,000 rows.
  */
-export async function getDashboardOverview(
-  from: string,
-  to: string,
-  granularity: Granularity,
-): Promise<DashboardView> {
-  const snapshot = await mockApi.getDashboard();
-  const start = dayjs(from);
-  const end = dayjs(to);
-  const length = Math.max(end.diff(start, 'day') + 1, 1);
 
-  const inRange = (point: DailyPoint) =>
-    !dayjs(point.date).isBefore(start, 'day') && !dayjs(point.date).isAfter(end, 'day');
-  const window = snapshot.daily.filter(inRange);
-  const previousWindow = snapshot.daily.filter(
-    (point) =>
-      !dayjs(point.date).isBefore(start.subtract(length, 'day'), 'day') &&
-      dayjs(point.date).isBefore(start, 'day'),
+export interface DashboardKpis {
+  inquiriesToday: number;
+  inquiriesYesterday: number;
+  inquiriesThisMonth: number;
+  inquiriesLastMonth: number;
+  activeProducts: number;
+  draftProducts: number;
+  totalProducts: number;
+}
+
+export interface InquirySeriesPoint {
+  period: string; // 'MMM D'
+  inquiries: number;
+}
+
+export interface TodoItem {
+  key: string;
+  label: string;
+  meta: 'Draft' | 'Inquiries' | 'Media';
+  path: string;
+  tone: 'gold' | 'mint' | 'gray';
+}
+
+export interface DashboardData {
+  kpis: DashboardKpis;
+  series: InquirySeriesPoint[];
+  todos: TodoItem[];
+}
+
+const PAGE_SIZE = 100;
+const MAX_PAGES = 10;
+
+async function fetchAllQuotes(): Promise<ApiQuote[]> {
+  const quotes: ApiQuote[] = [];
+  let current = 1;
+  let total = Infinity;
+  while (quotes.length < total && current <= MAX_PAGES) {
+    const response = await getQuoteList({ current, pageSize: PAGE_SIZE });
+    total = response.total;
+    quotes.push(...response.result);
+    current += 1;
+  }
+  return quotes;
+}
+
+function countBetween(quotes: ApiQuote[], start: Dayjs, end: Dayjs): number {
+  return quotes.filter((quote) => {
+    const date = dayjs(quote.created_at);
+    return !date.isBefore(start, 'day') && !date.isAfter(end, 'day');
+  }).length;
+}
+
+export async function getDashboardData(): Promise<DashboardData> {
+  const [stats, quotes] = await Promise.all([getProductStats(), fetchAllQuotes()]);
+
+  const now = dayjs();
+  const today = countBetween(quotes, now, now);
+  const yesterday = countBetween(quotes, now.subtract(1, 'day'), now.subtract(1, 'day'));
+  const monthStart = now.startOf('month');
+  const thisMonth = countBetween(quotes, monthStart, now);
+  const lastMonth = countBetween(
+    quotes,
+    monthStart.subtract(1, 'month'),
+    monthStart.subtract(1, 'day'),
   );
 
-  const revenue = sum(window, 'revenue');
-  const orders = sum(window, 'orders');
-  const visits = sum(window, 'visits');
-  const conversion = visits ? (orders / visits) * 100 : 0;
-  const previousConversion = sum(previousWindow, 'visits')
-    ? (sum(previousWindow, 'orders') / sum(previousWindow, 'visits')) * 100
-    : 0;
+  // 30-day daily buckets, zero-filled so quiet days still plot on the axis.
+  const counts = new Map<string, number>();
+  for (const quote of quotes) {
+    const key = dayjs(quote.created_at).format('YYYY-MM-DD');
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  const series: InquirySeriesPoint[] = [];
+  for (let offset = 29; offset >= 0; offset -= 1) {
+    const day = now.subtract(offset, 'day');
+    const key = day.format('YYYY-MM-DD');
+    series.push({ period: day.format('MMM D'), inquiries: counts.get(key) ?? 0 });
+  }
 
-  const metrics: KpiMetric[] = [
-    {
-      key: 'users',
-      label: 'Total Users',
-      value: snapshot.userCount,
-      trend: {
-        text: `${snapshot.activeUsers} active`,
-        caption: 'across your organization',
-        direction: 'flat',
-      },
+  // Products missing a featured image, scanned from the first catalog page.
+  const firstPage = await getProductList({ pageSize: PAGE_SIZE });
+  const missingImages = firstPage.result.filter((product) => !product.featured_image).length;
+
+  const todos: TodoItem[] = [
+    stats.draft > 0 && {
+      key: 'draft',
+      label: `${stats.draft} products awaiting review`,
+      meta: 'Draft',
+      path: '/products',
+      tone: 'gold',
     },
-    {
-      key: 'revenue',
-      label: 'Revenue',
-      value: revenue,
-      prefix: '$',
-      trend: trend(revenue, sum(previousWindow, 'revenue'), 'vs previous period'),
+    today > 0 && {
+      key: 'inquiries',
+      label: `${today} new inquiries to reply`,
+      meta: 'Inquiries',
+      path: '/quotes',
+      tone: 'mint',
     },
-    {
-      key: 'orders',
-      label: 'Orders',
-      value: orders,
-      trend: trend(orders, sum(previousWindow, 'orders'), 'vs previous period'),
+    missingImages > 0 && {
+      key: 'images',
+      label: `${missingImages} products missing a featured image`,
+      meta: 'Media',
+      path: '/products',
+      tone: 'gray',
     },
-    {
-      key: 'conversion',
-      label: 'Conversion Rate',
-      value: Number(conversion.toFixed(1)),
-      suffix: '%',
-      trend: trend(conversion, previousConversion, 'vs previous period'),
-    },
-  ];
+  ].filter((item): item is TodoItem => item !== false);
 
   return {
-    metrics,
-    series: bucket(window, granularity),
-    traffic: {
-      total: visits,
-      sources: snapshot.trafficSources.map((source) => ({
-        name: source.name,
-        share: source.share,
-        value: Math.round((visits * source.share) / 100),
-      })),
+    kpis: {
+      inquiriesToday: today,
+      inquiriesYesterday: yesterday,
+      inquiriesThisMonth: thisMonth,
+      inquiriesLastMonth: lastMonth,
+      activeProducts: stats.active,
+      draftProducts: stats.draft,
+      totalProducts: stats.total,
     },
-    orders: snapshot.orders,
-    tasks: snapshot.tasks,
-    events: snapshot.events,
+    series,
+    todos,
   };
 }

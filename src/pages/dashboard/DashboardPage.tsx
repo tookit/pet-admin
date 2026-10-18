@@ -1,70 +1,48 @@
 import { PageContainer } from '@ant-design/pro-components';
 import {
-  BarChartOutlined,
-  ShoppingCartOutlined,
-  UserOutlined,
-  WalletOutlined,
+  AppstoreOutlined,
+  CommentOutlined,
+  FileTextOutlined,
+  MailOutlined,
+  RightOutlined,
 } from '@ant-design/icons';
-import {
-  Alert,
-  Button,
-  Card,
-  Col,
-  DatePicker,
-  Row,
-  Segmented,
-  Select,
-  Skeleton,
-  Tooltip,
-} from 'antd';
-import dayjs, { type Dayjs } from 'dayjs';
-import { useEffect, useState, type ReactNode } from 'react';
+import { Alert, Button, Card, Col, Empty, List, Row, Skeleton, Space, Tag, Typography } from 'antd';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import MetricsRow, { type MetricItem } from '@/components/MetricsRow';
-import { getDashboardOverview, type MetricKey } from '@/api/modules/dashboard.api';
-import type { DashboardView, Granularity } from '@/types';
-import { APP_CONFIG } from '@/constants/app';
+import { getDashboardData, type DashboardData, type TodoItem } from '@/api/modules/dashboard.api';
+import { useAuth } from '@/contexts/AuthContext';
+import { displayName } from '@/utils/user';
 import ChartDataTable from './ChartDataTable';
-import DashboardCalendar from './DashboardCalendar';
-import MyTasks from './MyTasks';
-import RecentOrders from './RecentOrders';
-import RevenueOverview from './RevenueOverview';
-import TrafficSources from './TrafficSources';
+import InquiryTrend from './InquiryTrend';
 
-const GRANULARITIES: Array<{ label: string; value: Granularity }> = [
-  { label: 'Monthly', value: 'monthly' },
-  { label: 'Weekly', value: 'weekly' },
-  { label: 'Daily', value: 'daily' },
-];
-
-const ICONS: Record<
-  string,
-  { icon: ReactNode; tone: 'primary' | 'success' | 'warning' | 'purple' }
-> = {
-  users: { icon: <UserOutlined />, tone: 'primary' },
-  revenue: { icon: <WalletOutlined />, tone: 'success' },
-  orders: { icon: <ShoppingCartOutlined />, tone: 'warning' },
-  conversion: { icon: <BarChartOutlined />, tone: 'purple' },
+const TODO_TAG: Record<TodoItem['tone'], { color: string }> = {
+  gold: { color: 'gold' },
+  mint: { color: 'green' },
+  gray: { color: 'default' },
 };
 
-const DEFAULT_RANGE: [Dayjs, Dayjs] = [dayjs().subtract(11, 'month').startOf('month'), dayjs()];
+function greeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
+}
 
+/** Dashboard per design/adminpro-design-docs/dashboard.md: KPI row + trend/to-dos. */
 export default function DashboardPage() {
-  const [range, setRange] = useState<[Dayjs, Dayjs]>(DEFAULT_RANGE);
-  const [granularity, setGranularity] = useState<Granularity>('monthly');
-  const [metric, setMetric] = useState<MetricKey>('revenue');
-  const [view, setView] = useState<DashboardView>();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [data, setData] = useState<DashboardData>();
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
 
-  const from = range[0].format('YYYY-MM-DD');
-  const to = range[1].format('YYYY-MM-DD');
-
   useEffect(() => {
     let active = true;
-    getDashboardOverview(from, to, granularity)
+    getDashboardData()
       .then((next) => {
         if (!active) return;
-        setView(next);
+        setData(next);
         setFailed(false);
       })
       .catch(() => {
@@ -73,37 +51,80 @@ export default function DashboardPage() {
     return () => {
       active = false;
     };
-  }, [from, to, granularity, attempt]);
+  }, [attempt]);
 
-  const items: MetricItem[] = (view?.metrics ?? []).map((metricItem) => ({
-    label: metricItem.label,
-    value: metricItem.value,
-    prefix: metricItem.prefix,
-    suffix: metricItem.suffix,
-    icon: ICONS[metricItem.key].icon,
-    tone: ICONS[metricItem.key].tone,
-    trend: metricItem.trend,
-  }));
+  const kpis = data?.kpis;
 
-  const loading = !view && !failed;
+  const items: MetricItem[] = kpis
+    ? [
+        (() => {
+          const change = kpis.inquiriesYesterday
+            ? ((kpis.inquiriesToday - kpis.inquiriesYesterday) / kpis.inquiriesYesterday) * 100
+            : null;
+          return {
+            label: "Today's Inquiries",
+            value: kpis.inquiriesToday,
+            icon: <CommentOutlined />,
+            trend: {
+              text: change == null ? '—' : `${change > 0 ? '+' : ''}${change.toFixed(1)}%`,
+              caption: 'vs yesterday',
+              direction: change == null ? 'flat' : change > 0.5 ? 'up' : change < -0.5 ? 'down' : 'flat',
+            },
+          };
+        })(),
+        {
+          label: 'Active Products',
+          value: kpis.activeProducts,
+          icon: <AppstoreOutlined />,
+          detail: `${kpis.totalProducts} total in catalog`,
+        },
+        {
+          label: 'Pending Review',
+          value: kpis.draftProducts,
+          icon: <FileTextOutlined />,
+          tone: 'warning',
+          detail: 'Draft products',
+        },
+        (() => {
+          const change = kpis.inquiriesLastMonth
+            ? ((kpis.inquiriesThisMonth - kpis.inquiriesLastMonth) / kpis.inquiriesLastMonth) * 100
+            : null;
+          return {
+            label: 'Inquiries This Month',
+            value: kpis.inquiriesThisMonth,
+            icon: <MailOutlined />,
+            trend: {
+              text: change == null ? '—' : `${change > 0 ? '+' : ''}${change.toFixed(1)}%`,
+              caption: 'vs last month',
+              direction: change == null ? 'flat' : change > 0.5 ? 'up' : change < -0.5 ? 'down' : 'flat',
+            },
+          };
+        })(),
+      ]
+    : [];
+
+  const loading = !data && !failed;
 
   return (
     <PageContainer
-      title="Dashboard"
-      subTitle={`Welcome back! Here's what's happening with ${APP_CONFIG.name} today.`}
-      extra={
-        <DatePicker.RangePicker
-          allowClear={false}
-          value={range}
-          onChange={(next) => next?.[0] && next[1] && setRange([next[0], next[1]])}
-        />
+      title={`${greeting()}, ${displayName(user)}`}
+      subTitle={
+        kpis ? (
+          <span>
+            There are <b style={{ color: 'var(--app-warning)' }}>{kpis.draftProducts} products</b>{' '}
+            awaiting review and{' '}
+            <b style={{ color: 'var(--app-warning)' }}>{kpis.inquiriesToday} new inquiries</b> today.
+          </span>
+        ) : (
+          'Loading overview…'
+        )
       }
     >
       {failed ? (
         <Alert
           type="error"
           showIcon
-          message="Unable to load analytics."
+          message="Unable to load the overview."
           description="The dashboard figures could not be read. Retry, or reload the page."
           action={
             <Button size="small" onClick={() => setAttempt((value) => value + 1)}>
@@ -127,37 +148,17 @@ export default function DashboardPage() {
 
       <Row gutter={[16, 16]} className="section-card">
         <Col xs={24} xl={16}>
-          <Card
-            title="Revenue Overview"
-            extra={
-              <div className="card-controls">
-                <Segmented<MetricKey>
-                  value={metric}
-                  onChange={setMetric}
-                  options={[
-                    { label: 'Revenue', value: 'revenue' },
-                    { label: 'Orders', value: 'orders' },
-                  ]}
-                />
-                <Select<Granularity>
-                  value={granularity}
-                  onChange={setGranularity}
-                  options={GRANULARITIES}
-                  aria-label="Time granularity"
-                />
-              </div>
-            }
-          >
-            <p className="card-description">Total revenue and orders over the selected range.</p>
-            {view ? (
+          <Card title="Inquiry Trend">
+            <p className="card-description">New inquiries over the last 30 days.</p>
+            {data ? (
               <>
-                <RevenueOverview data={view.series} metric={metric} />
+                <InquiryTrend data={data.series} />
                 <ChartDataTable
-                  caption={`${metric === 'revenue' ? 'Revenue' : 'Orders'} per ${granularity.replace('ly', '')} period`}
-                  columns={['Period', metric === 'revenue' ? 'Revenue (USD)' : 'Orders']}
-                  rows={view.series.map((point) => ({
+                  caption="Daily inquiries over the last 30 days"
+                  columns={['Day', 'Inquiries']}
+                  rows={data.series.map((point) => ({
                     key: point.period,
-                    cells: [point.period, point[metric]],
+                    cells: [point.period, point.inquiries],
                   }))}
                 />
               </>
@@ -168,50 +169,36 @@ export default function DashboardPage() {
         </Col>
 
         <Col xs={24} xl={8}>
-          <Card title="Traffic Sources">
-            <p className="card-description">Where your visitors come from.</p>
-            {view ? (
-              <>
-                <TrafficSources sources={view.traffic.sources} total={view.traffic.total} />
-                <ChartDataTable
-                  caption="Visits by traffic source"
-                  columns={['Source', 'Visits', 'Share']}
-                  rows={view.traffic.sources.map((source) => ({
-                    key: source.name,
-                    cells: [source.name, source.value, `${source.share}%`],
-                  }))}
-                />
-              </>
+          <Card title="To-do">
+            {data ? (
+              <List<TodoItem>
+                dataSource={data.todos}
+                locale={{
+                  emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Nothing pending — you're all caught up." />,
+                }}
+                renderItem={(item) => (
+                  <List.Item
+                    actions={[
+                      <Button
+                        key="go"
+                        type="link"
+                        aria-label={`Open ${item.path}`}
+                        onClick={() => void navigate(item.path)}
+                      >
+                        Open <RightOutlined />
+                      </Button>,
+                    ]}
+                  >
+                    <Space size={8}>
+                      <Tag {...TODO_TAG[item.tone]}>{item.meta}</Tag>
+                      <Typography.Text>{item.label}</Typography.Text>
+                    </Space>
+                  </List.Item>
+                )}
+              />
             ) : (
               <Skeleton active />
             )}
-          </Card>
-        </Col>
-      </Row>
-
-      <Row gutter={[16, 16]} className="section-card">
-        <Col xs={24} xl={12}>
-          <Card
-            title="Recent Orders"
-            extra={
-              <Tooltip title="An orders page is not part of this demo">
-                <Button type="link" disabled>
-                  View All
-                </Button>
-              </Tooltip>
-            }
-          >
-            {view ? <RecentOrders orders={view.orders} /> : <Skeleton active />}
-          </Card>
-        </Col>
-        <Col xs={24} xl={6}>
-          <Card title="My Tasks">
-            {view ? <MyTasks tasks={view.tasks} /> : <Skeleton active />}
-          </Card>
-        </Col>
-        <Col xs={24} xl={6}>
-          <Card title="Calendar">
-            {view ? <DashboardCalendar events={view.events} /> : <Skeleton active />}
           </Card>
         </Col>
       </Row>

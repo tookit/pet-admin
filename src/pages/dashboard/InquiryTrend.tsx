@@ -1,7 +1,6 @@
 import { Area } from '@ant-design/plots';
-import { formatCompact, formatCurrency, type MetricKey } from '@/api/modules/dashboard.api';
 import { CHART_TOKENS, NO_ENTRY_ANIMATION } from '@/constants/app';
-import type { SeriesPoint } from '@/types';
+import type { InquirySeriesPoint } from '@/api/modules/dashboard.api';
 
 const AXIS = {
   x: {
@@ -24,24 +23,17 @@ const AXIS = {
 } as const;
 
 /**
- * One measure at a time, so one hue: the Revenue/Orders switch changes the field
- * being plotted, never the colour of a series. The card title names the measure,
- * so there is no legend box.
+ * Daily inquiry counts for the last 30 days. One measure, one hue: the brand
+ * Mint Teal 700 (`CHART_TOKENS.series`), area fill at the brand gradient
+ * opacity — mirrors the design mockup in adminpro-design-docs/dashboard.md.
  */
-export default function RevenueOverview({
-  data,
-  metric,
-}: {
-  data: SeriesPoint[];
-  metric: MetricKey;
-}) {
-  const format = metric === 'revenue' ? formatCurrency : (value: number) => `${value}`;
+export default function InquiryTrend({ data }: { data: InquirySeriesPoint[] }) {
   return (
     <Area
       {...NO_ENTRY_ANIMATION}
       data={data}
       xField="period"
-      yField={metric}
+      yField="inquiries"
       height={280}
       legend={false}
       style={{ fill: CHART_TOKENS.series, fillOpacity: CHART_TOKENS.seriesFillOpacity }}
@@ -57,18 +49,17 @@ export default function RevenueOverview({
         ...AXIS,
         y: {
           ...AXIS.y,
-          labelFormatter: (value: number) =>
-            metric === 'revenue' ? `$${formatCompact(value)}` : formatCompact(value),
+          labelFormatter: (value: number) => `${value}`,
         },
       }}
       scale={{ y: { nice: true } }}
       tooltip={{
-        title: (datum: SeriesPoint) => datum.period,
+        title: (datum: InquirySeriesPoint) => datum.period,
         items: [
           {
             channel: 'y',
-            name: metric === 'revenue' ? 'Revenue' : 'Orders',
-            valueFormatter: format,
+            name: 'Inquiries',
+            valueFormatter: (value: number) => `${value}`,
           },
         ],
       }}

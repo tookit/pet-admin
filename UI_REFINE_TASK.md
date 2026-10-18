@@ -111,9 +111,9 @@
 
 ## R3 工作台
 
-- [ ] 真实数据：`/quotes` 聚合询盘、`/products` 统计，KPI 行。
-- [ ] 30 天询盘面积图 + 无障碍数据表；待办列表可跳转。
-- [ ] Loading Skeleton、失败 Alert + Retry。
+- [x] 真实数据：`/quotes` 聚合询盘、`/products` 统计，KPI 行。
+- [x] 30 天询盘面积图 + 无障碍数据表；待办列表可跳转。
+- [x] Loading Skeleton、失败 Alert + Retry。
 - 说明：移除设计稿之外的旧卡片（Revenue/Traffic/Tasks/Calendar）；询盘无状态字段，待办按「今日新询盘」计算。
 
 ## R4 商品列表
@@ -143,6 +143,7 @@
 ## 提交策略
 
 R1–R7 各自独立提交，前缀 `feat:` / `docs:`；不推送。
+
 
 
 
