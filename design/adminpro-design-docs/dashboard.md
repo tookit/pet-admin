@@ -1,22 +1,18 @@
-# Dashboard
+# 工作台（Dashboard）
 
-> 页面类型：业务总览  
-> 推荐组件：`PageContainer`、`StatisticCard`、`ProCard`、`ProTable`、`List`、`Calendar`、`Badge`、图表组件
+> 页面类型：业务总览
+> 推荐组件：`PageContainer`、`StatisticCard`、`ProCard`、`ProTable`、`List`、`Tag`、图表组件
+> 截图：`../dashboard.png`
 
 ---
 
 ## 1. 页面目标
 
-Dashboard 是系统登录后的业务总览首页。
+登录后的运营总览首页，让运营者在 5–10 秒内掌握：
 
-主要目标：
-
-- 快速展示核心指标。
-- 呈现趋势和变化。
-- 提供业务异常和待办信息。
-- 提供最近订单 / 记录。
-- 展示日程。
-- 让用户在 5–10 秒内理解系统当前状态。
+- 今日询盘与商品状态
+- 待处理事项（金色提示）
+- 询盘趋势
 
 ---
 
@@ -24,343 +20,96 @@ Dashboard 是系统登录后的业务总览首页。
 
 ```txt
 PageContainer
-├── Page Header
-│   ├── Breadcrumb
-│   ├── Dashboard
-│   ├── Description
-│   └── DateRangePicker
-│
-├── Metrics Row
-│   ├── Total Users
-│   ├── Revenue
-│   ├── Orders
-│   └── Conversion Rate
-│
-├── Analytics Row
-│   ├── Revenue Overview
-│   └── Traffic Sources
-│
-└── Bottom Row
-    ├── Recent Orders
-    ├── My Tasks
-    └── Calendar
+├── Page Header（问候语 + 今日待办摘要）
+├── Metrics Row（4 列 KPI）
+│   ├── 今日新询盘
+│   ├── 在售商品（Active）
+│   ├── 待审核（Draft）      ← 金色图标底 + 金色提示
+│   └── 本月询盘金额（USD）
+├── Analytics Row（1.6 : 1）
+│   ├── 询盘趋势 · 近 30 天（Area 图）
+│   └── 待办事项（Table）
+└── （可扩展：最近成交 / 日历）
 ```
 
 ---
 
 ## 3. Page Header
 
-使用 `PageContainer`。
-
 ```tsx
 <PageContainer
-  title="Dashboard"
-  subTitle="Welcome back! Here's what's happening with your business today."
-  extra={[<DatePicker.RangePicker />]}
+  title="早上好，Michael 👋"
+  subTitle={<>今天有 <b style={{ color: '#B8851A' }}>12 条新询盘</b> 和 3 个待审核商品等待处理。</>}
 />
 ```
 
-日期范围变化后刷新：
-
-- Metrics
-- Revenue Chart
-- Traffic Sources
-- Recent Orders
+待办数字用 `--accent-700`（#B8851A），不放按钮，保持轻量。
 
 ---
 
 ## 4. KPI Cards
 
-### 布局
-
-Desktop：
+桌面 4 列，Tablet 2×2，Mobile 单列。每张卡：
 
 ```txt
-4 columns
+[图标chip]  指标名
+            26px 等宽粗体数值
+            ▲ 12.4% vs 昨日（涨绿跌红）
 ```
 
-Tablet：
+| 指标 | 图标底色 | 说明 |
+| ---- | -------- | ---- |
+| 今日新询盘 | `--primary-50` | 环比昨日 |
+| 在售商品 | `--primary-50` | 本周新增 SKU 数 |
+| 待审核（Draft） | `--accent-100`（金色） | 显示「● 需要处理」 |
+| 本月询盘金额 | `--primary-50` | USD，$ 前缀 |
 
-```txt
-2 × 2
-```
-
-Mobile：
-
-```txt
-1 column
-```
-
-### Card 内容
-
-每张卡：
-
-```txt
-[Icon] Metric Name            +12%
-       18,432                 vs last month
-```
-
-推荐：
-
-```tsx
-<StatisticCard />
-```
-
-指标：
-
-| Metric          | Icon                 | Accent     |
-| --------------- | -------------------- | ---------- |
-| Total Users     | UserOutlined         | Blue       |
-| Revenue         | WalletOutlined       | Green      |
-| Orders          | ShoppingCartOutlined | Red/Orange |
-| Conversion Rate | BarChartOutlined     | Purple     |
-
-趋势：
-
-- 正增长：绿色
-- 负增长：红色
-- 不变：灰色
+图标 chip：36px 圆角 4px，Icon 18px stroke 1.8。
 
 ---
 
-## 5. Revenue Overview
+## 5. 询盘趋势
 
-推荐：
+`ProCard` + Ant Design Plots Area 图：
 
-```txt
-ProCard + Ant Design Charts
-```
+- 主线：`#5CC4A8`，2.5px，渐变填充（透明度 .28 → 0）
+- 对比线（上年同期）：`#D9D6D7` 虚线
+- 悬浮点：白底 + 主色描边圆点，Tooltip 显示 ProCard 明细
+- Card Header 右侧「查看报表 →」链接（`--primary-600`）
 
-Card Header：
-
-```txt
-Revenue Overview
-Total revenue and orders over the last 12 months.
-
-[Revenue] [Orders] [Monthly ▼]
-```
-
-图表：
-
-- X Axis：月份
-- Y Axis：金额 / 数量
-- Area + Line
-- Hover Tooltip
-- 选中点高亮
-
-交互：
-
-- Revenue / Orders 切换
-- Monthly / Weekly / Daily
-- Date range 联动
+图例说明使用 11.5px mono 小字：`— 询盘量 · -- 上年同期`。
 
 ---
 
-## 6. Traffic Sources
+## 6. 待办事项
 
-使用环形图。
+`ProTable`（迷你，无搜索区）或 `List`：
 
-Card：
+| 事项 | 类型 Tag | 操作 |
+| ---- | -------- | ---- |
+| 3 个商品待审核 | 待处理（gold） | 去处理 |
+| 12 条新询盘未回复 | 询盘（mint） | 去回复 |
+| 2 个分类缺封面图 | 媒体（gray） | 去补充 |
+| 供应商资质 30 天内到期 | 紧急（red） | 去查看 |
 
-```txt
-Traffic Sources
-Where your visitors come from.
-```
-
-中央：
-
-```txt
-12,480
-Total Visits
-```
-
-右侧 Legend：
-
-```txt
-Organic Search   40%
-Direct           24%
-Referral         16%
-Social Media     12%
-Email             6%
-Paid Ads          2%
-```
-
-图表颜色保持区分但不过度饱和。
+- 操作为文字按钮（`--primary-600`）
+- 类型 Tag 遵循全站「浅底 + 色点」规范
 
 ---
 
-## 7. Recent Orders
-
-使用 `ProTable`。
-
-推荐字段：
-
-```ts
-['#', 'Customer', 'Product', 'Amount', 'Status', 'Created At', 'Actions'];
-```
-
-Status：
-
-- Paid → success
-- Processing → processing
-- Pending → warning
-- Failed → error
-
-Actions：
-
-```txt
-View
-Edit
-Refund
-More
-```
-
-默认只显示 `...`，点击 `Dropdown`。
-
-Card Header 右侧：
-
-```txt
-View All →
-```
-
-Dashboard 只展示最近 5 条。
-
----
-
-## 8. My Tasks
-
-使用：
-
-```txt
-List
-Checkbox
-Tag
-```
-
-Item：
-
-```txt
-☐ Review new user registrations     High
-   3 pending approvals
-```
-
-Priority：
-
-- High → red
-- Medium → blue
-- Low → default
-
-勾选后：
-
-- 文本变灰
-- 可增加删除线
-- 显示 `message.success`
-
----
-
-## 9. Calendar
-
-使用 `Calendar` 的 mini 模式。
-
-内容：
-
-```txt
-October 2026
-Su Mo Tu We Th Fr Sa
-```
-
-选中日期下方显示当天事件：
-
-```txt
-● Team sync meeting      10:00–11:00
-● Product update review  14:00–15:00
-● Design workshop        16:00–17:00
-```
-
-事件使用不同颜色 `Badge` 区分。
-
----
-
-## 10. 响应式
-
-### Desktop
-
-```txt
-Metrics: 4 columns
-Analytics: 2 columns (2:1)
-Bottom: 2:1:1
-```
-
-### Tablet
-
-```txt
-Metrics: 2 columns
-Charts: 1 column
-Bottom: 1 column
-```
-
-### Mobile
-
-全部单列。
-
-图表保持最小高度：
-
-```txt
-280px
-```
-
-表格：
-
-```css
-overflow-x: auto;
-```
-
----
-
-## 11. Loading / Empty / Error
-
-### Loading
+## 7. Loading / Empty / Error
 
 - KPI → Skeleton
-- Chart → Spin
-- Table → loading
-
-### Empty
-
-Orders / Tasks：
-
-```tsx
-<Empty description="No recent data" />
-```
-
-### Error
-
-图表接口错误：
-
-```txt
-Unable to load analytics.
-[Retry]
-```
+- 图表 → Spin
+- 待办表 → ProTable loading
+- 空态：`<Empty description="暂无待办">` + CTA「去处理询盘」
 
 ---
 
-## 12. 推荐组件清单
+## 8. 响应式
 
-```txt
-PageContainer
-StatisticCard
-ProCard
-ProTable
-DatePicker.RangePicker
-Segmented
-Select
-List
-Checkbox
-Tag
-Badge
-Calendar
-Dropdown
-Skeleton
-Spin
-Empty
-```
+| 断点 | 布局 |
+| ---- | ---- |
+| Desktop ≥1200 | KPI 4 列；趋势 1.6fr + 待办 1fr |
+| Tablet 768–1199 | KPI 2×2；图表单列 |
+| Mobile <768 | 全部单列；表格横向滚动 |
