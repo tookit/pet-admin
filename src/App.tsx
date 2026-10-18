@@ -55,7 +55,14 @@ function ThemedApp() {
               }
             : {}),
         },
-        components: { ...appTheme.components, Table: { headerBg: dark ? '#1D2430' : '#F8FAFC' } },
+        components: {
+          ...appTheme.components,
+          Table: {
+            headerBg: dark ? '#1D2430' : '#F7F6F7',
+            headerColor: dark ? '#E5EAF2' : '#484345',
+            rowHoverBg: dark ? '#222B39' : '#FAFAF9',
+          },
+        },
       }}
     >
       <ThemeSurface />

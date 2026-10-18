@@ -97,10 +97,10 @@
 
 ## R1 设计系统与外壳
 
-- [ ] 主题 token：Mint Teal / Warm Gold / Cool Gray、圆角 4/6、56px header、216px sider、表头与菜单选中色。
-- [ ] 品牌替换：名称 Petpallets Admin、favicon/logo、默认 `side` 布局、本地存储 key。
-- [ ] 侧栏三组：Operations / Catalog / System，使用 ProLayout `siderMenuType="group"`。
-- [ ] 卡片边框优先于阴影；页面标题 20px。
+- [x] 主题 token：Mint Teal / Warm Gold / Cool Gray、圆角 4/6、56px header、216px sider、表头与菜单选中色。
+- [x] 品牌替换：名称 Petpallets Admin、favicon/logo、默认 `side` 布局、本地存储 key。
+- [x] 侧栏三组：Operations / Catalog / System，使用 ProLayout `siderMenuType="group"`。
+- [x] 卡片边框优先于阴影；页面标题 20px。
 - 说明：菜单以英文呈现（Dashboard、Inquiries 等），分组标题英文；不引入设计稿中的金色待回复徽标（后端无状态计数）。
 
 ## R2 登录页
@@ -143,4 +143,5 @@
 ## 提交策略
 
 R1–R7 各自独立提交，前缀 `feat:` / `docs:`；不推送。
+
 

@@ -12,16 +12,17 @@ import zhCN from 'antd/es/locale/zh_CN';
 
 /** Change these values to rebrand the boilerplate. */
 export const APP_CONFIG = {
-  name: 'AdminPro',
+  name: 'Petpallets Admin',
   logo: '/logo-symbol.svg',
   version: '0.1.0',
   theme: {
-    // Design system §4.1 / §16.
-    primaryColor: '#1677FF',
-    infoColor: '#1677FF',
-    successColor: '#22C55E',
-    warningColor: '#F59E0B',
-    errorColor: '#EF4444',
+    // Petpallets brand — extracted from the logo. See html/DESIGN.md and
+    // design/adminpro-design-docs/design.md for the full token reference.
+    primaryColor: '#5CC4A8', // Mint Teal 500
+    infoColor: '#5CC4A8',
+    successColor: '#2D8C5A',
+    warningColor: '#E7AD42', // Warm Gold — "needs attention" only, never decorative
+    errorColor: '#D14343',
   },
 } as const;
 
@@ -33,18 +34,30 @@ export const appTheme: ThemeConfig = {
     colorWarning: APP_CONFIG.theme.warningColor,
     colorError: APP_CONFIG.theme.errorColor,
     fontSize: 14,
-    borderRadius: 8,
-    borderRadiusLG: 12,
-    controlHeight: 36,
-    colorBgLayout: '#F5F7FB',
-    colorText: '#1F2937',
-    colorTextSecondary: '#626D7D',
-    colorTextPlaceholder: '#707B8B',
-    colorBorderSecondary: '#EEF0F3',
+    // Swiss precision: small radii, flat buttons, borders over shadows.
+    borderRadius: 4,
+    borderRadiusLG: 6,
+    controlHeight: 32,
+    colorBgLayout: '#F7F6F7',
+    colorText: '#272425', // logo pupil dark
+    colorTextSecondary: '#7E787A',
+    colorTextPlaceholder: '#BEBABB',
+    colorBorderSecondary: '#EDEBEC',
     fontFamily:
-      "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif",
+      "'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif",
   },
-  components: { Card: { headerFontSize: 16 }, Table: { headerBg: '#F8FAFC' } },
+  components: {
+    Layout: { headerHeight: 56 },
+    Card: { headerFontSize: 15 },
+    Table: { headerBg: '#F7F6F7', headerColor: '#484345', rowHoverBg: '#FAFAF9' },
+    Menu: {
+      itemSelectedBg: '#F2FBF8',
+      itemSelectedColor: '#368F79',
+      itemBorderRadius: 4,
+      itemMarginInline: 8,
+    },
+    Button: { primaryShadow: 'none', fontWeight: 500 },
+  },
 };
 
 export const STORAGE_KEYS = {
@@ -82,16 +95,19 @@ export type AccentName = keyof typeof ACCENT_COLORS;
 export const accentTint = (name: AccentName) => `${ACCENT_COLORS[name]}1F`;
 
 /**
- * Chart chrome. `series` is the brand primary, checked against the white card
- * surface for lightness band, chroma, and >= 3:1 contrast. Every chart here plots
- * a single measure, so all marks share one hue — the axis and tooltip carry the
- * values, and colour never re-encodes what mark length already shows.
+ * Chart chrome. `series` is the brand chart hue. The UI primary (#5CC4A8) sits
+ * at ~2.1:1 on the white card surface, so charts step up to Mint Teal 700
+ * (#368F79, ~3.4:1) to keep the >= 3:1 contrast the chart marks need; fill
+ * opacity 0.28 reproduces the brand area-gradient from the design mockups.
+ * Every chart here plots a single measure, so all marks share one hue — the
+ * axis and tooltip carry the values, and colour never re-encodes what mark
+ * length already shows.
  */
 export const CHART_TOKENS = {
-  series: APP_CONFIG.theme.primaryColor,
-  seriesFillOpacity: 0.1,
-  grid: '#e6eef8',
-  axisLabel: '#67727a',
+  series: '#368F79',
+  seriesFillOpacity: 0.28,
+  grid: '#EDEBEC',
+  axisLabel: '#9E999B',
   /**
    * Categorical slots for charts where the colour *is* the identity (traffic
    * sources). Validated as a set — lightness band, chroma floor, adjacent-pair

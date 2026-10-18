@@ -15,9 +15,24 @@ import { useAuth } from '@/contexts/AuthContext';
 import { displayName } from '@/utils/user';
 import { useSettings } from '@/contexts/SettingsContext';
 import { protectedRoutes } from '@/routes/routeDefinitions';
-const menuRoutes = protectedRoutes
+const MENU_GROUPS = [
+  { key: 'operations', name: 'Operations' },
+  { key: 'catalog', name: 'Catalog' },
+  { key: 'system', name: 'System' },
+] as const;
+const menuItems = protectedRoutes
   .filter((route) => !route.hideInMenu)
-  .map((route) => ({ path: `/${route.path}`, name: route.name, icon: route.icon }));
+  .map((route) => ({
+    path: `/${route.path}`,
+    name: route.name,
+    icon: route.icon,
+    group: route.group,
+  }));
+const menuRoutes = MENU_GROUPS.map((group) => ({
+  path: `/${group.key}`,
+  name: group.name,
+  routes: menuItems.filter((item) => item.group === group.key),
+}));
 export default function MainLayout() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
@@ -40,7 +55,8 @@ export default function MainLayout() {
         navTheme="light"
         fixSiderbar
         fixedHeader
-        siderWidth={224}
+        siderWidth={216}
+        siderMenuType="group"
 
         collapsed={settings.collapsed}
         onCollapse={(collapsed) => preview({ collapsed })}
@@ -60,7 +76,7 @@ export default function MainLayout() {
                 <AutoComplete
                   className="global-search"
                   value={search}
-                  options={menuRoutes
+                  options={menuItems
                     .filter((route) => route.name.toLowerCase().includes(search.toLowerCase()))
                     .map((route) => ({ value: route.path, label: route.name }))}
                   onSearch={setSearch}

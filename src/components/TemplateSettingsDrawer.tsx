@@ -29,12 +29,12 @@ import { DEFAULT_SETTINGS, useSettings, type LayoutMode } from '@/contexts/Setti
 const { Text, Title } = Typography;
 
 const COLOR_PRESETS = [
+  { name: 'Mint Teal', value: '#5CC4A8' },
+  { name: 'Forest', value: '#368F79' },
+  { name: 'Gold', value: '#E7AD42' },
   { name: 'Blue', value: '#1677FF' },
   { name: 'Purple', value: '#722ED1' },
   { name: 'Cyan', value: '#08979C' },
-  { name: 'Green', value: '#389E0D' },
-  { name: 'Orange', value: '#D46B08' },
-  { name: 'Magenta', value: '#C41D7F' },
 ] as const;
 
 const LAYOUTS: Array<{

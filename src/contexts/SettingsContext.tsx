@@ -12,7 +12,7 @@ export const DEFAULT_SETTINGS = {
   description: 'Building better products, together.',
   primaryColor: String(APP_CONFIG.theme.primaryColor),
   mode: 'light',
-  layout: 'mix' as LayoutMode,
+  layout: 'side' as LayoutMode,
   collapsed: false,
   language: 'en-US',
   timezone: 'Asia/Shanghai',
@@ -36,7 +36,9 @@ export const DEFAULT_SETTINGS = {
   securityWeeklyReport: true,
 };
 export type Settings = typeof DEFAULT_SETTINGS;
-const KEY = 'adminpro-settings';
+// Key bumped with the Petpallets rebrand so stale persisted settings (old blue
+// primary, mix layout) don't override the new defaults.
+const KEY = 'petpallets-admin-settings';
 const SettingsContext = createContext<{
   settings: Settings;
   saved: Settings;
