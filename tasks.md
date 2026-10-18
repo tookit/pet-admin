@@ -64,3 +64,44 @@
 - [x] `pnpm type-check`、`pnpm lint`、`pnpm build` 全部通过
 
 验收：全仓搜索不到页面直接引用 `@/mocks/api`；构建成功。
+
+## T6 商品 / 分类 / 标签
+
+- [x] `src/types/api.ts` 增加 Product、Category、Tag、PriceTier 类型
+- [x] `src/api/modules/product.api.ts`：列表/详情/创建/更新/删除/复制/价格档位
+- [x] `src/api/modules/category.api.ts`：树、CRUD、move；父级变更走 `POST /{id}/move`
+- [x] `src/api/modules/tag.api.ts`：列表与 CRUD
+- [x] `Products` 页：筛选（搜索/状态/类型/分类/精选）、统计卡、CRUD、复制、详情抽屉、价格档位增删
+- [x] `Categories` 页：树形表格、启停筛选、CRUD、父级移动
+- [x] `Tags` 页：分页列表与 CRUD
+- [x] 路由与侧边栏注册三个页面
+- [x] `pnpm type-check`、`pnpm lint`、`pnpm build` 通过
+
+验收：三个页面直接命中 pet-api；商品表单提交 `category_ids` 与 `tags`；分类父级变更调用 move 接口。
+
+## T7 报价管理
+
+- [ ] `quote.api.ts`：`GET /quotes`、`GET /quotes/{id}`、`DELETE /quotes/{id}`
+- [ ] `Quotes` 页：列表（name/email/company 筛选）、详情抽屉、删除
+- [ ] 详情按 `product_id` 批量取商品名，缺商品时回退显示 ID
+- [ ] 路由与侧边栏注册
+- [ ] `pnpm type-check`、`pnpm lint`、`pnpm build` 通过
+
+## T8 RBAC
+
+- [ ] `rbac.api.ts`：角色/权限列表与创建、角色-权限分配、用户-角色分配
+- [ ] `Roles` 页：角色表格、权限标签、创建角色、权限分配抽屉
+- [ ] 用户页增加“管理角色”动作，调用用户-角色分配接口
+- [ ] 路由与侧边栏注册
+- [ ] `pnpm type-check`、`pnpm lint`、`pnpm build` 通过
+
+## T9 媒体与属性
+
+- [ ] `client.ts` 支持 `FormData` 上传（不手写 Content-Type）
+- [ ] `media.api.ts`：列表、上传、删除
+- [ ] `Media` 页：文件列表/筛选、上传、复制 URL、删除
+- [ ] `attribute.api.ts`：列表、CRUD、值增删
+- [ ] `Attributes` 页：属性表格、创建/编辑、值管理
+- [ ] 路由与侧边栏注册
+- [ ] `pnpm type-check`、`pnpm lint`、`pnpm build` 通过
+
