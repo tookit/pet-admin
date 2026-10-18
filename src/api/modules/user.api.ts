@@ -34,8 +34,7 @@ export const createUser = (data: RegisterParams) =>
 export const updateUser = (id: number, data: UserUpdateParams) =>
   apiRequest<ApiUser>(`/users/${id}`, { method: 'PUT', body: data });
 
-export const deleteUser = (id: number) =>
-  apiRequest<void>(`/users/${id}`, { method: 'DELETE' });
+export const deleteUser = (id: number) => apiRequest<void>(`/users/${id}`, { method: 'DELETE' });
 
 export interface UserStats {
   total: number;

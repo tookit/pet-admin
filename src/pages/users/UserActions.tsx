@@ -37,7 +37,11 @@ export function UserActions({ record, onEdit, onView, onDelete }: Props) {
         ],
       }}
     >
-      <Button size="small" icon={<MoreOutlined />} aria-label={`Actions for ${displayName(record)}`} />
+      <Button
+        size="small"
+        icon={<MoreOutlined />}
+        aria-label={`Actions for ${displayName(record)}`}
+      />
     </Dropdown>
   );
 }

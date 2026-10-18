@@ -25,19 +25,19 @@ pnpm is the package manager (`packageManager` field pins the version; `pnpm-lock
 
 Built: Dashboard, User management, Profile, Security, Settings, and the shared shell/branding. `Role Management` and `Permission` appear in the design but have no spec, so no routes were created for them. Nothing has been verified in a real browser — automated checks only.
 
+API integration is tracked in `tasks.md` (T1–T5): auth, user management and profile now call pet-api; Dashboard and Security remain mocked.
+
 `AGENTS.md` restates this file for other agents; keep the overlapping parts in sync.
 
 ## Architecture
 
-### Data flows mock-first, in three layers
+### Data flows in three layers
 
-1. `src/mocks/api.ts` — the only stateful module. In-memory `users` array, 250 ms artificial latency, no HTTP. Mutations last for the browser session only.
-2. `src/api/modules/*.api.ts` — adapters that call the mock and shape responses into `PaginatedResponse<T>` (from `@/types`). Filtering and pagination happen client-side in `getUserList`.
-3. Pages — import from `@/api/modules/*`, never from `@/mocks/api`.
+1. `src/api/client.ts` — the only module using `fetch`. Adds the Bearer token from `STORAGE_KEYS.ACCESS_TOKEN`, serializes query params, throws `ApiError` for the unified pet-api error shape, and clears the session + redirects on 401.
+2. `src/api/modules/*.api.ts` — typed adapters. `auth.api.ts`, `user.api.ts` and `profile.api.ts` hit pet-api; `dashboard.api.ts` and `security.api.ts` still call `src/mocks/api.ts`. `UserQueryParams` maps ProTable's `current/pageSize` to the API's `page/per_page`.
+3. Pages — import from `@/api/modules/*`, never from `@/mocks/api` or `@/api/client`.
 
-To connect a real backend, rewrite layer 2 and keep the `PaginatedResponse<T>` contract so `useProTable` and the tables keep working.
-
-`UserInput` and `UserFormValues` in `src/types/index.ts` are the shared shapes: `UserInput` is the upsert payload (`id` present means update), `UserFormValues` the form subset the client may submit. Both are `Pick`s of `User`, so widening the entity's form fields is a one-line change there.
+API types live in `src/types/api.ts` (`ApiUser`, `Role`, `TokenResponse`, `UserUpdateParams`); UI-only types stay in `src/types/index.ts`. The user page uses the API shape directly: `username`, `firstname`, `lastname`, `roles[]`, numeric `status` (`0` inactive, `1` active, `2` frozen).
 
 ### Routes are declared once, consumed twice
 
@@ -47,11 +47,11 @@ Adding a page = add one entry to `routeDefinitions.tsx`. Paths are relative (`'u
 
 `AuthGuard` in `routes/index.tsx` wraps the whole `MainLayout` branch and redirects to `/login` when unauthenticated. `/` redirects to `settings.landingPage` — not a literal `'/dashboard'` — so the landing page stays configurable from Settings.
 
-### Auth is a stub, settings are real preferences
+### Auth is real; settings are local preferences
 
-`src/contexts/AuthContext.tsx` holds a mock user (`{ name, email }`, no token) persisted in **`sessionStorage`** under `STORAGE_KEYS.USER`. The initial state is read synchronously via a lazy `useState` initializer, so there is no loading state and no flash. `sessionStorage` is user-writable, so `readStoredUser` parses defensively. `login` accepts any email; no real validation, no role enforcement — `UserRole` is display only.
+`src/contexts/AuthContext.tsx` stores `access_token` and the `ApiUser` from `GET /me` in **`sessionStorage`**, reading the user synchronously via a lazy `useState` initializer. `login(username, password)` posts to `/login`, saves the token, then calls `/me`; failure clears both keys. `updateUser` keeps the context in sync after a profile save. `sessionStorage` is user-writable, so `readStoredUser` parses defensively. Redirects on 401 are owned by `src/api/client.ts`.
 
-`src/contexts/SettingsContext.tsx` is the second context and behaves differently on purpose: it keeps `settings` (what the UI renders) and `saved` (what is persisted) apart, so a settings screen can `preview()` live, then `save()` or `cancel()`. It persists to **`localStorage`** through `readPreferences` in `src/utils/storage.ts`, which copies only keys present in `DEFAULT_SETTINGS` **and** matching the default's `typeof` — a new setting needs an entry in `DEFAULT_SETTINGS` or it will be silently dropped on reload. `DEFAULT_SETTINGS` is seeded from `APP_CONFIG`, so `App.tsx` sets `document.title` from it.
+`src/contexts/SettingsContext.tsx` is still browser-local and behaves differently on purpose: it keeps `settings` (what the UI renders) and `saved` (what is persisted) apart, so a settings screen can `preview()` live, then `save()` or `cancel()`. It persists to **`localStorage`** through `readPreferences` in `src/utils/storage.ts`, which copies only keys present in `DEFAULT_SETTINGS` **and** matching the default's `typeof` — a new setting needs an entry in `DEFAULT_SETTINGS` or it will be silently dropped on reload. `DEFAULT_SETTINGS` is seeded from `APP_CONFIG`, so `App.tsx` sets `document.title` from it.
 
 ### Theming: one runtime source, bridged to CSS
 
@@ -73,13 +73,13 @@ Class names shared between LESS and components (`.header-brand`, `.page-users`, 
 `src/pages/users/UserList.tsx` is the reference list screen, and the pattern it establishes is the one to copy:
 
 - Filters live in a standalone `QueryFilter` above the table, not in ProTable's built-in search form (`search={false}` on the table). `onFinish`/`onReset` write a `params` state object and reset to page 1 through `actionRef.current?.setPageInfo?.({ current: 1 })`; `params` is passed to the table, so a filter change refetches without the table owning the form state.
-- Summary tiles render from `getAllUsers()`, never from the current page of results, so the figures do not move when the user pages or filters. Both tiles and table refresh together through the shared `reload()`.
+- Summary tiles render from `getUserStats()`, never from the current page of results, so the figures do not move when the user pages or filters. It issues one single-item page request per status and reads `total`. Both tiles and table refresh together through the shared `reload()`.
 - `perform(action, success)` is the single mutation path: it sets `busy`, runs the call, awaits `reload()`, and owns the success/error toasts. Row actions, bulk actions, and the drawer all route through it, so new mutations should too.
-- Bulk actions hang off `rowSelection` + `tableAlertOptionRender`, and the destructive one goes through `modal.confirm` from `App.useApp()`.
-- `options.ts` holds `ROLE_OPTIONS`/`STATUS_OPTIONS` shared by the filter, the drawer form, and the columns — a new status should be added to `UserStatus` in `src/types` and to `STATUS_OPTIONS`, and nothing else.
-- CSV export goes through `src/utils/csv.ts`: `downloadCsv` writes a UTF-8 BOM so Excel reads non-ASCII names, and `csvCell` prefixes a `'` to any value starting with `=`, `+`, `-`, or `@` so a name cannot become a spreadsheet formula.
+- Bulk actions hang off `rowSelection` + `tableAlertOptionRender`; the destructive one goes through `modal.confirm` from `App.useApp()`.
+- `options.ts` holds `STATUS_OPTIONS`, `STATUS_META` and `GENDER_OPTIONS`, derived from the API's numeric status. A new status belongs in `ApiUserStatus` in `src/types/api.ts` and in both maps, nothing else.
+- CSV export goes through `src/utils/csv.ts`: `downloadCsv` writes a UTF-8 BOM so Excel reads non-ASCII names, and `csvCell` prefixes a `'` to any value starting with `=`, `+`, `-`, or `@` so a name cannot become a spreadsheet formula. The user export pages through `/users` at 100 rows per request.
 
-User table columns live in `src/pages/users/UserColumn.tsx` (a `use*Columns` hook returning `ProColumns<User>[]`), row actions in `src/pages/users/UserActions.tsx`. Drawer CRUD follows `UserList.tsx`: one `Form.useForm`, an `editing` record in state, `resetFields()` before populating, and a reload after a mutation. Shared presentational components live in `src/components/` (`MetricsRow` for stat tiles).
+User table columns live in `src/pages/users/UserColumn.tsx` (a `use*Columns` hook returning `ProColumns<ApiUser>[]`), row actions in `src/pages/users/UserActions.tsx`. Drawer CRUD follows `UserList.tsx`: one `Form.useForm`, an `editing` record in state, `resetFields()` before populating, and a reload after a mutation. Create sends `username/email/password`; edit sends only `firstname/lastname/phone/avatar/gender`, which is all `UserUpdate` accepts. Shared presentational components live in `src/components/` (`MetricsRow` for stat tiles).
 
 ### Charts
 
@@ -91,7 +91,7 @@ Rules the existing charts follow, and new ones should too:
 - **Every chart ships a `ChartDataTable`.** It renders the same numbers as an `.sr-only` table (class in `global.less`), so no value is reachable only by hovering.
 - **Spread `NO_ENTRY_ANIMATION` into every plot.** The entry animation is decorative, and G2 ignores `prefers-reduced-motion`. It has to be spread from a variable rather than written as a prop — see the comment on the constant.
 - **Labels go outside the mark.** A label at `position: 'top'` lands _on_ the bar's top edge and renders dark gray over the fill; `dy: -18` lifts it clear. Watch for this on any new labelled chart.
-- Chart data comes from the seeded 365-day series (`buildDaily`) in `src/mocks/api.ts`, so the KPIs and the charts are computed from one source and reloading does not reshuffle them. Do not reintroduce a hardcoded percentage — the old `metricsFor`/`rolesFor` pair that read the `users` array is gone.
+- Chart data comes from the seeded two-year series (`buildDaily`) in `src/mocks/api.ts`, so the KPIs and the charts are computed from one source and reloading does not reshuffle them. Do not reintroduce a hardcoded percentage.
 - **The donut is the exception to "one measure = one hue".** Traffic sources encode identity, so `TrafficSources.tsx` uses `CHART_TOKENS.categorical` — a fixed six-hue order, validated for colour-vision separation against both card surfaces. Assign the hues in order and never cycle them: a seventh source folds into "Other" rather than borrowing a hue.
 
 `height` on a plot includes the axis band — do not add a height that assumes the axis lives outside it, and do not give the card a fixed height that clips it.
@@ -107,5 +107,6 @@ Rules the existing charts follow, and new ones should too:
 ## Known gaps
 
 - No error boundary — an unexpected render error blanks the page.
-- The mock `users` array is module state, so it is shared across tabs and reset on reload.
+- The mock `users` array is gone; Dashboard still shows placeholder user counts, not pet-api totals.
+- Role assignment and status changes have no pet-api endpoint wired into this UI.
 - `pnpm type-check`, `pnpm lint` and `pnpm build` pass. The `chrome-devtools` MCP server fails to connect, so layout was checked with a throwaway Chrome DevTools Protocol script instead (headless Chrome on `:9222`, `Emulation.setDeviceMetricsOverride` + `Runtime.evaluate`): inner page width, the dashboard KPI tiles and the locale of both component libraries at 1440px and 375px. Dark mode, the tablet breakpoint and the charts' rendered output remain unchecked.

@@ -50,7 +50,6 @@ export const appTheme: ThemeConfig = {
 export const STORAGE_KEYS = {
   ACCESS_TOKEN: 'pet-portal-access-token',
   USER: 'pet-portal-user',
-  PROFILE: 'pet-portal-profile',
 } as const;
 
 const LOCALES = { 'en-US': enUS, 'zh-CN': zhCN, 'ja-JP': jaJP } as const;

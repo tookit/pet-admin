@@ -339,7 +339,9 @@ export default function UserList() {
             return true;
           } catch {
             void message.error(
-              editing ? 'Unable to update user' : 'Unable to create user. Check username and email.',
+              editing
+                ? 'Unable to update user'
+                : 'Unable to create user. Check username and email.',
             );
             return false;
           }
@@ -352,11 +354,7 @@ export default function UserList() {
               label="Username"
               rules={[{ required: true, min: 3, whitespace: true }]}
             />
-            <ProFormText
-              name="email"
-              label="Email"
-              rules={[{ required: true, type: 'email' }]}
-            />
+            <ProFormText name="email" label="Email" rules={[{ required: true, type: 'email' }]} />
             <ProFormText.Password
               name="password"
               label="Password"

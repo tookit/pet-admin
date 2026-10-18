@@ -2,11 +2,13 @@
 
 ## Project Structure & Module Organization
 
-This is a React 19, TypeScript, Vite, and Ant Design admin starter with in-memory mock data.
+This is a React 19, TypeScript, Vite, and Ant Design admin starter. Auth, user management
+and profile call pet-api; Dashboard and Security still use in-memory mock data.
 
 - `src/pages/` groups screens and related components by feature; `src/layouts/` contains auth and admin shells.
 - `src/routes/routeDefinitions.tsx` defines routes and sidebar metadata. Use relative paths such as `users`.
-- `src/api/modules/*.api.ts` adapts `src/mocks/api.ts`; pages consume adapters, never mocks directly. Preserve the shared `PaginatedResponse<T>` contract in `src/types/`.
+- `src/api/client.ts` owns `fetch`, Bearer tokens and error parsing. `src/api/modules/*.api.ts` adapts pet-api (or the mock) into page-ready shapes; pages consume adapters, never the client or mocks directly. Preserve the shared `PaginatedResponse<T>` contract in `src/types/`.
+- `src/types/api.ts` mirrors pet-api schemas; `src/types/index.ts` holds UI-only shapes.
 - `src/hooks/` contains reusable hooks, including `useProTable`; `src/contexts/` holds authentication state (`AuthContext`) and branding/preferences (`SettingsContext`).
 - `src/constants/app.ts` configures branding and Ant Design tokens. LESS lives in `src/styles/`; keep `variables.less` first in `index.less`.
 - `public/` contains static assets; `design/` contains visual references. Production output goes to `dist/`.
@@ -29,7 +31,7 @@ Use two spaces, LF endings, semicolons, single quotes, trailing commas, and a 10
 
 ## Testing Guidelines
 
-No test runner, test naming convention, coverage threshold, or CI workflow is configured. Run type-check, lint, and build after code changes. Manually verify affected flows, including authentication, user CRUD, filtering, pagination, and dashboard updates. For UI changes, check responsive layouts and chart data-table accessibility. Configure a runner before introducing automated tests.
+No test runner, test naming convention, coverage threshold, or CI workflow is configured. Run type-check, lint, and build after code changes. Manually verify affected flows against a running pet-api: login, user CRUD, filtering, pagination, and profile save. For UI changes, check responsive layouts and chart data-table accessibility. Configure a runner before introducing automated tests.
 
 ## Commit & Pull Request Guidelines
 
@@ -37,4 +39,5 @@ Follow the existing type-prefixed style, for example `feat: rebuild the dashboar
 
 ## Security & Configuration
 
-Authentication is a demo stub using `sessionStorage`, without server validation or role enforcement. Replace it before production use. Never commit secrets.
+Authentication uses a real pet-api JWT stored in `sessionStorage`; the API base URL comes from
+`VITE_API_BASE_URL` (see `.env.example`). No secrets belong in the repo.

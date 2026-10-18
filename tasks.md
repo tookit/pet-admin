@@ -58,9 +58,9 @@
 
 ## T5 清理 mock 与文档
 
-- [ ] 删除 mock 中不再使用的登录、注册、用户 CRUD、个人资料数据
-- [ ] Dashboard/Security 的 mock 保留且不依赖已删除数据
-- [ ] 更新 `README.md`、`CLAUDE.md`、`AGENTS.md` 中“mock-first / 无后端”的描述
-- [ ] `pnpm type-check`、`pnpm lint`、`pnpm build` 全部通过
+- [x] 删除 mock 中不再使用的登录、注册、用户 CRUD、个人资料数据
+- [x] Dashboard/Security 的 mock 保留且不依赖已删除数据
+- [x] 更新 `README.md`、`CLAUDE.md`、`AGENTS.md` 中“mock-first / 无后端”的描述
+- [x] `pnpm type-check`、`pnpm lint`、`pnpm build` 全部通过
 
 验收：全仓搜索不到页面直接引用 `@/mocks/api`；构建成功。

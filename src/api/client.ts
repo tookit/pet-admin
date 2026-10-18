@@ -84,9 +84,12 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 
   const data: unknown = await response.json().catch(() => null);
   if (!response.ok) {
-    const payload = data as
-      | { message?: string; detail?: string; code?: string; errors?: Record<string, string[]> }
-      | null;
+    const payload = data as {
+      message?: string;
+      detail?: string;
+      code?: string;
+      errors?: Record<string, string[]>;
+    } | null;
     if (response.status === 401) {
       clearSession();
       redirectToLogin();

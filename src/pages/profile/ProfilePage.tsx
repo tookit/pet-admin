@@ -1,5 +1,11 @@
 import { CalendarOutlined, MailOutlined, PhoneOutlined, UserOutlined } from '@ant-design/icons';
-import { PageContainer, ProCard, ProForm, ProFormSelect, ProFormText } from '@ant-design/pro-components';
+import {
+  PageContainer,
+  ProCard,
+  ProForm,
+  ProFormSelect,
+  ProFormText,
+} from '@ant-design/pro-components';
 import { App, Avatar, Button, Col, Row, Space, Tag, Typography } from 'antd';
 import { useEffect, useState } from 'react';
 import { getProfile, updateProfile } from '@/api/modules/profile.api';

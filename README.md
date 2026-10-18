@@ -1,6 +1,6 @@
 # Ant Design Admin Boilerplate
 
-Vite + React 19 + Ant Design 5 admin starter with Pro Components. Every data call is mocked in memory, so it runs with no backend.
+Vite + React 19 + Ant Design 5 admin starter with Pro Components. Authentication, user management and profile read from **pet-api**; dashboard and security stay mocked so the shell runs without the API for those screens.
 
 ![AdminPro dashboard](./output/playwright/adminpro-dashboard.png)
 
@@ -8,23 +8,27 @@ Vite + React 19 + Ant Design 5 admin starter with Pro Components. Every data cal
 
 - Responsive ProLayout shell with sidebar, mixed, and top navigation modes.
 - Live template customizer for light/dark mode, preset or custom brand colors, and layout selection.
-- Dashboard metrics, accessible chart data, recent orders, tasks, and calendar views.
-- User management, profile, security, and organization settings flows backed by deterministic mock data.
-- Browser-persisted appearance and preferences with no backend required.
+- JWT login against pet-api, backed by `sessionStorage`.
+- User management (list, search, create, edit, delete) backed by `/api/v1/users`.
+- Profile editing backed by `/api/v1/me`.
+- Dashboard metrics and security flows still use deterministic mock data.
 
 ## Requirements
 
 - Node.js `^20.19` or `>=22.12` (required by Vite 8)
 - pnpm 11 — `corepack enable` picks up the version pinned in `package.json`
+- pet-api running on `http://localhost:8001` (see `pet-api/scripts/run_server.sh`)
 
 ## Getting started
 
 ```bash
+cp .env.example .env   # VITE_API_BASE_URL, defaults to http://localhost:8001/api/v1
 pnpm install
 pnpm dev
 ```
 
-Open the printed URL, then sign in with any valid email and a password of at least six characters. No credentials are checked.
+Sign in with a real pet-api account. The default `.env.example` points at
+`http://localhost:8001/api/v1`; CORS on pet-api already allows the Vite dev origin.
 
 ## Scripts
 
@@ -43,13 +47,13 @@ Open the printed URL, then sign in with any valid email and a password of at lea
 
 ## How it fits together
 
-### Data flows through three layers
+### Data flows in three layers
 
-1. `src/mocks/api.ts` — the only stateful module. The `users` array lives in memory, every call resolves after 250 ms, nothing touches the network.
-2. `src/api/modules/*.api.ts` — adapters that call the mock and shape the result into `PaginatedResponse<T>`.
-3. Pages — import from `@/api/modules/*`, never from the mock directly.
+1. `src/api/client.ts` — the only module that touches `fetch`. It adds the Bearer token, serializes query params, parses the unified `ErrorResponse`, and clears the session on 401.
+2. `src/api/modules/*.api.ts` — typed adapters: `auth.api.ts`, `user.api.ts`, `profile.api.ts` call pet-api; `dashboard.api.ts` and `security.api.ts` still call `src/mocks/api.ts`.
+3. Pages — import from `@/api/modules/*`, never from the mock or the client directly.
 
-To use a real backend, rewrite layer 2 and keep the `PaginatedResponse<T>` contract. `useProTable` and the tables keep working unchanged.
+`user.api.ts` keeps the `PaginatedResponse<T>` contract and maps ProTable's `current/pageSize` to the API's `page/per_page`, so `useProTable` stays unchanged.
 
 ### Routes are declared once
 
@@ -57,9 +61,11 @@ To use a real backend, rewrite layer 2 and keep the `PaginatedResponse<T>` contr
 
 Paths are relative (`users`, not `/users`) because they nest under a layout route; `MainLayout` re-prefixes them with `/` for menu keys. `AuthGuard` wraps the whole authenticated branch and redirects to `/login` when there is no user.
 
-### Auth is a stub
+### Auth uses a real JWT
 
-`src/contexts/AuthContext.tsx` keeps `{ name, email }` in `sessionStorage` — no token, no server call, no role enforcement. `UserRole` exists only for display. Replace the context when you add real auth.
+`src/contexts/AuthContext.tsx` stores `access_token` and the `ApiUser` from `GET /me` in `sessionStorage`. Login posts `{ username, password }` to `/login`, saves the token, then fetches the profile. Logout and any 401 clear both keys. `UserName` in the header is `firstname + lastname`, falling back to `username`.
+
+API user fields differ from the boilerplate's original demo shape: `username`, `firstname`, `lastname`, `roles[]`, and numeric `status` (`0` inactive, `1` active, `2` frozen). The user page uses those fields directly.
 
 ### Screens
 
@@ -69,15 +75,15 @@ Dashboard, User Management, Profile, Security and Settings are implemented. `Rol
 
 `src/contexts/SettingsContext.tsx` holds branding and preferences in `localStorage` — theme, primary color, layout, logo, landing page, table density, and notification switches. The header's template customizer applies and persists appearance changes immediately. `GeneralTab` and `PreferencesTab` stage their form edits through `preview()` and only `save()` writes them; `cancel()` rolls back. Keys are validated on read by `readPreferences` in `src/utils/storage.ts`, which drops anything that is not a known key with the right type — a new persisted setting has to be added to `DEFAULT_SETTINGS` or it will silently disappear.
 
-Profile data persists separately under `STORAGE_KEYS.PROFILE`. Changing a password, enabling 2FA, removing a device, signing out other sessions, connecting an integration, billing and account deletion all need a server, so they explain that and refuse — none of them report success. Keep that property when touching those screens: a demo that fakes a password change teaches the wrong thing.
+Profile data now comes from pet-api. Company, job title, location, social links and skills have no API field, so the profile page no longer shows them. Changing a password, enabling 2FA, removing a device, signing out other sessions, connecting an integration, billing and account deletion all need server endpoints that pet-api does not expose here, so they explain that and refuse — none of them report success.
 
 ### Tables
 
-`src/hooks/useProTable.ts` centralizes the ProTable setup — pagination, search, toolbar options, `PaginatedResponse` unwrapping — and reads `message` from `App.useApp()` so toasts inherit the configured theme. Use it for new list screens. Columns for the users table live in `src/pages/users/UserColumn.tsx`.
+`src/hooks/useProTable.ts` centralizes the ProTable setup — pagination, search, toolbar options, `PaginatedResponse` unwrapping — and reads `message` from `App.useApp()` so toasts inherit the configured theme. Use it for new list screens. Columns for the users table live in `src/pages/users/UserColumn.tsx`; summary counts come from `getUserStats()`, which asks `/users` for a single-item page per status and reads `total`.
 
 ### Charts
 
-The dashboard plots revenue and orders over the selected range, plus traffic by source. The numbers come from a seeded 365-day series in `src/mocks/api.ts`, so the KPIs (and their change against the previous equal-length window) are computed rather than hardcoded, and reloading does not reshuffle them.
+The dashboard plots revenue and orders over the selected range, plus traffic by source. The numbers come from a seeded two-year series in `src/mocks/api.ts`, so the KPIs (and their change against the previous equal-length window) are computed rather than hardcoded, and reloading does not reshuffle them.
 
 Charts use `@ant-design/plots`. Each one is a small component in `src/pages/dashboard/` that owns its mark spec, and every chart is paired with `ChartDataTable` — a `.sr-only` table holding the same numbers, because a tooltip must never be the only way to read a value. Colours come from `CHART_TOKENS` in `src/constants/app.ts`: the area chart plots one measure, so it uses the single brand hue; the donut encodes identity, so it uses `CHART_TOKENS.categorical`, a fixed six-hue order validated for colour-vision separation against both card surfaces. Assign those hues in order and never cycle them.
 
@@ -106,4 +112,5 @@ ESLint runs typescript-eslint's type-checked rules, so floating promises, misuse
 
 - No test runner and no CI configuration.
 - No error boundary — an unexpected render error blanks the page.
-- The mock `users` array is module state, so it is shared across tabs and reset on reload.
+- Dashboard and Security are still mock data; their user counts are placeholders, not pet-api totals.
+- Role assignment and user status changes are not exposed by the pet-api endpoints this UI calls.

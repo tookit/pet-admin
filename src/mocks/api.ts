@@ -4,170 +4,23 @@ import type {
   DashboardSnapshot,
   LoginRecord,
   Order,
-  Profile,
-  ProfileActivity,
-  ProfileSnapshot,
   SecuritySnapshot,
   Task,
   TrafficSource,
   TrustedDevice,
-  User,
-  UserInput,
 } from '@/types';
 
-let users: User[] = [
-  {
-    id: 1,
-    name: 'Alex Morgan',
-    email: 'alex.morgan@example.com',
-    role: 'admin',
-    status: 'active',
-    createdAt: '2025-10-06',
-  },
-  {
-    id: 2,
-    name: 'Taylor Kim',
-    email: 'taylor.kim@example.com',
-    role: 'editor',
-    status: 'active',
-    createdAt: '2025-11-12',
-  },
-  {
-    id: 3,
-    name: 'Sofia Almeida',
-    email: 'sofia.almeida@example.com',
-    role: 'editor',
-    status: 'active',
-    createdAt: '2026-01-08',
-  },
-  {
-    id: 4,
-    name: 'Priya Raman',
-    email: 'priya.raman@example.com',
-    role: 'admin',
-    status: 'active',
-    createdAt: '2026-01-19',
-  },
-  {
-    id: 5,
-    name: 'Emma Larsen',
-    email: 'emma.larsen@example.com',
-    role: 'viewer',
-    status: 'active',
-    createdAt: '2026-02-03',
-  },
-  {
-    id: 6,
-    name: 'Tom Becker',
-    email: 'tom.becker@example.com',
-    role: 'viewer',
-    status: 'active',
-    createdAt: '2026-02-27',
-  },
-  {
-    id: 7,
-    name: 'Marcus Chen',
-    email: 'marcus.chen@example.com',
-    role: 'editor',
-    status: 'active',
-    createdAt: '2026-03-22',
-  },
-  {
-    id: 8,
-    name: 'Aisha Bello',
-    email: 'aisha.bello@example.com',
-    role: 'viewer',
-    status: 'active',
-    createdAt: '2026-04-11',
-  },
-  {
-    id: 9,
-    name: 'Daniel Okafor',
-    email: 'daniel.okafor@example.com',
-    role: 'admin',
-    status: 'active',
-    createdAt: '2026-05-04',
-  },
-  {
-    id: 10,
-    name: 'Hana Ito',
-    email: 'hana.ito@example.com',
-    role: 'editor',
-    status: 'active',
-    createdAt: '2026-05-30',
-  },
-  {
-    id: 11,
-    name: 'Viktor Novak',
-    email: 'viktor.novak@example.com',
-    role: 'viewer',
-    status: 'active',
-    createdAt: '2026-06-02',
-  },
-  {
-    id: 12,
-    name: 'Grace Lim',
-    email: 'grace.lim@example.com',
-    role: 'viewer',
-    status: 'active',
-    createdAt: '2026-06-25',
-  },
-  {
-    id: 13,
-    name: "Liam O'Connor",
-    email: 'liam.oconnor@example.com',
-    role: 'editor',
-    status: 'active',
-    createdAt: '2026-07-14',
-  },
-  {
-    id: 14,
-    name: 'Ruben Ortiz',
-    email: 'ruben.ortiz@example.com',
-    role: 'viewer',
-    status: 'invited',
-    createdAt: '2026-07-29',
-  },
-  {
-    id: 15,
-    name: 'Chloe Dubois',
-    email: 'chloe.dubois@example.com',
-    role: 'viewer',
-    status: 'active',
-    createdAt: '2026-08-09',
-  },
-  {
-    id: 16,
-    name: 'Nadia Haddad',
-    email: 'nadia.haddad@example.com',
-    role: 'editor',
-    status: 'invited',
-    createdAt: '2026-08-26',
-  },
-  {
-    id: 17,
-    name: 'Sam Whitfield',
-    email: 'sam.whitfield@example.com',
-    role: 'viewer',
-    status: 'invited',
-    createdAt: '2026-09-01',
-  },
-  {
-    id: 18,
-    name: 'Jordan Lee',
-    email: 'jordan.lee@example.com',
-    role: 'viewer',
-    status: 'invited',
-    createdAt: '2026-09-10',
-  },
-];
+/**
+ * Dashboard and Security are still demo surfaces. User management and profile now
+ * read from pet-api and must not depend on data in this file.
+ */
+const MOCK_USER_COUNT = 18;
+const MOCK_ACTIVE_USERS = 16;
 
 /**
- * Product-level activity for the last two years. Independent of the `users` table
- * above, which is the admin's slice of it.
- *
- * Seeded rather than random: the demo must not reshuffle its own numbers on every
- * reload, and the recent days have to stay put while the user compares ranges.
+ * Product-level activity for the last two years. Seeded rather than random: the demo
+ * must not reshuffle its own numbers on every reload, and the recent days have to
+ * stay put while the user compares ranges.
  *
  * Two years, not one: the dashboard's change figures compare a range against the
  * preceding range of equal length, and a one-year series leaves that previous
@@ -273,45 +126,6 @@ const EVENTS: CalendarEvent[] = [
   { date: isoDaysAgo(-3), title: 'Vendor call', time: '11:30 AM – 12:00 PM', tone: 'warning' },
 ];
 
-const PROFILE: Profile = {
-  fullName: 'Wang Qiangshen',
-  displayName: 'Wangqiangshen',
-  email: 'admin@example.com',
-  phone: '+86 138 0000 0000',
-  company: 'Acme Corporation',
-  jobTitle: 'Administrator',
-  location: 'Beijing, China',
-  timezone: 'Asia/Shanghai',
-  joinedAt: '2023-04-18',
-  bio: 'Building better products, together.',
-  website: '',
-  linkedin: '',
-  github: '',
-  twitter: '',
-  skills: ['Product Management', 'Team Leadership', 'React'],
-};
-
-const ACTIVITIES: ProfileActivity[] = [
-  {
-    id: 1,
-    title: 'Logged in successfully',
-    detail: 'Chrome on macOS · 192.168.1.1',
-    time: '2026-09-19 10:24',
-  },
-  {
-    id: 2,
-    title: 'Updated profile information',
-    detail: 'Changed your job title',
-    time: '2026-09-17 15:15',
-  },
-  {
-    id: 3,
-    title: 'Invited a team member',
-    detail: 'jordan.lee@example.com',
-    time: '2026-09-10 09:02',
-  },
-];
-
 const DEVICES: TrustedDevice[] = [
   {
     id: 1,
@@ -374,27 +188,15 @@ const wait = <T>(data: T): Promise<T> =>
   new Promise((resolve) => window.setTimeout(() => resolve(data), 250));
 
 export const mockApi = {
-  login: (email: string) => wait({ name: email.split('@')[0] || 'Admin', email }),
-
-  register: (name: string, email: string) => wait({ name, email }),
-
-  /** User counts come from the live array, so the tiles cannot disagree with the table. */
   getDashboard: (): Promise<DashboardSnapshot> =>
     wait({
-      userCount: users.length,
-      activeUsers: users.filter((user) => user.status === 'active').length,
+      userCount: MOCK_USER_COUNT,
+      activeUsers: MOCK_ACTIVE_USERS,
       daily: DAILY,
       trafficSources: TRAFFIC_SOURCES,
       orders: ORDERS,
       tasks: TASKS,
       events: EVENTS,
-    }),
-
-  getProfile: (): Promise<ProfileSnapshot> =>
-    wait({
-      profile: PROFILE,
-      activities: ACTIVITIES,
-      stats: { teamMembers: 18, projects: 6, contributions: 128, daysActive: 412 },
     }),
 
   getSecurity: (): Promise<SecuritySnapshot> =>
@@ -404,27 +206,4 @@ export const mockApi = {
       logins: LOGINS,
       otpUrl: 'otpauth://totp/AdminPro:admin@example.com?secret=JBSWY3DPEHPK3PXP&issuer=AdminPro',
     }),
-
-  getUsers: () => wait([...users]),
-
-  saveUser: (user: UserInput) => {
-    const existing = user.id ? users.find((item) => item.id === user.id) : undefined;
-    if (existing) {
-      Object.assign(existing, user);
-    } else {
-      const nextId = users.reduce((max, item) => Math.max(max, item.id), 0) + 1;
-      const nextUser: User = {
-        ...user,
-        id: nextId,
-        createdAt: new Date().toISOString().slice(0, 10),
-      };
-      users = [nextUser, ...users];
-    }
-    return wait(undefined);
-  },
-
-  deleteUser: (id: number) => {
-    users = users.filter((user) => user.id !== id);
-    return wait(undefined);
-  },
 };
