@@ -131,8 +131,8 @@
 
 ## R6 媒体库
 
-- [ ] 左侧目录面板按 `aggregate_type` 归类（All / Product / Category / User），代替设计稿的文件夹。
-- [ ] 上传 Dragger、网格/列表切换、搜索文件名、5 列卡片、预览/复制链接/删除。
+- [x] 左侧目录面板按 `aggregate_type` 归类（All files / Images / Documents / Videos / Audio / Archives / Other），代替设计稿的文件夹。
+- [x] 上传 Dragger、网格/列表切换、搜索文件名、5 列卡片、预览/复制链接/删除。
 - 说明：后端无文件夹、无使用位置/引用计数、无改名接口；「新建文件夹」与 usage tag 不实现。
 
 ## R7 文档与校验
@@ -143,6 +143,7 @@
 ## 提交策略
 
 R1–R7 各自独立提交，前缀 `feat:` / `docs:`；不推送。
+
 
 
 
