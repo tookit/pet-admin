@@ -365,7 +365,12 @@ export default function ProductList() {
             className="product-cell__thumb"
             shape="square"
             size={36}
-            src={mediaUrl(product.featured_image)}
+            src={mediaUrl(
+              product.featured_image ??
+                product.images.find((image) => image.featured)?.url ??
+                product.images[0]?.url ??
+                null,
+            )}
             icon={<InboxOutlined />}
           />
           <div className="product-cell__body">

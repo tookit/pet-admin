@@ -347,7 +347,13 @@ export default function QuoteList() {
                         <Avatar
                           shape="square"
                           size={32}
-                          src={mediaUrl(products[item.product_id]?.featured_image ?? null)}
+                          src={mediaUrl(
+                            products[item.product_id]?.featured_image ??
+                              products[item.product_id]?.images.find((image) => image.featured)
+                                ?.url ??
+                              products[item.product_id]?.images[0]?.url ??
+                              null,
+                          )}
                           icon={<InboxOutlined />}
                         />
                         <div className="inquiry-item-product__body">

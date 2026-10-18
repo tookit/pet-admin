@@ -588,6 +588,9 @@ body {
   color: var(--app-muted);
   white-space: nowrap;
 }
+.ant-drawer .ant-drawer-content-wrapper {
+  min-width: 760px;
+}
 .product-form .ant-drawer-footer {
   padding: 12px 24px;
   border-top: 1px solid var(--app-border);
@@ -926,7 +929,8 @@ body {
   }
 }
 @media (max-width: 767px) {
-  .product-form .ant-drawer-content-wrapper {
+  .ant-drawer .ant-drawer-content-wrapper {
+    min-width: 0;
     width: 100vw !important;
   }
   .form-grid {
