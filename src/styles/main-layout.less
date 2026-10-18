@@ -40,6 +40,54 @@
 .ant-pro-page-container-children-container {
   padding: 0 24px 24px;
 }
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 19;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: 56px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--app-border);
+  background: var(--app-surface);
+}
+.app-header__crumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--app-muted);
+  font-size: 13px;
+}
+.app-header__sep {
+  color: var(--app-border);
+}
+.app-header__current {
+  overflow: hidden;
+  color: var(--app-text);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.app-header__actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+}
+/* Actions live in the custom content header; ProLayout also mirrors them into
+ * the sider footer in side layout, which would duplicate them. */
+.ant-pro-layout .ant-pro-sider-actions,
+.ant-pro-layout .ant-pro-sider-actions-list {
+  display: none;
+}
+.app-header .global-search {
+  width: min(280px, 32vw);
+  margin-left: 0;
+  margin-right: 8px;
+}
 .header-brand {
   display: flex;
   align-items: center;
@@ -217,6 +265,11 @@
   gap: 20px;
 }
 @media (max-width: 767px) {
+  /* Below the tablet breakpoint ProLayout renders its own header (menu,
+   * actions, avatar); showing ours too would stack two bars. */
+  .app-header {
+    display: none;
+  }
   .global-search {
     display: none;
   }
