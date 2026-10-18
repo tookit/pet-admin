@@ -277,6 +277,7 @@ export const adminTheme = {
 | ---- | ---- | ---- |
 | `dashboard.md` | 工作台 | `dashboard.png` |
 | `product-list.md` | 商品列表 | `list.png` |
+| `product-form.md` | 商品表单 | `product-form.png` |
 | `inquiry.md` | 询盘管理 | `inquiry.png` |
 | `media.md` | 媒体库 | `media.png` |
 | `login.md` | 登录 | `login.png` |
