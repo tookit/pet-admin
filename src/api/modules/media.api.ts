@@ -3,6 +3,7 @@ import type { PaginatedResponse } from '@/types';
 import type {
   ApiMedia,
   EntityMediaGroup,
+  MediaDirectory,
   MediaQueryParams,
   MediaUploadResponse,
 } from '@/types/api';
@@ -14,7 +15,13 @@ export const getMediaList = (params: MediaQueryParams = {}) =>
       per_page: params.pageSize ?? 24,
       aggregate_type: params.aggregate_type,
       filename: params.filename,
+      directory: params.directory,
     },
+  });
+
+export const getMediaDirectories = (aggregateType?: string) =>
+  apiRequest<MediaDirectory[]>('/media/directories', {
+    params: aggregateType ? { aggregate_type: aggregateType } : undefined,
   });
 
 export const uploadMedia = (file: File, directory?: string) => {

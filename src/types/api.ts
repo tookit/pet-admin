@@ -132,9 +132,36 @@ export interface ApiProduct {
   images: ProductImage[];
   tags: ProductTagRef[];
   categories: ProductCategoryRef[];
+  suppliers: ApiProductSupplierLink[];
   min_price: number | null;
   moq: number;
   created_at: string | null;
+}
+
+/** Supplier attached to a product, with the 1688 purchase-order details. */
+export interface ApiProductSupplierLink {
+  product_id: number;
+  supplier_id: number;
+  is_primary: boolean;
+  offer_id: string | null;
+  offer_url: string | null;
+  supplier_sku: string | null;
+  source_price: number | null;
+  source_currency: string;
+  moq: number | null;
+  lead_time_days: number | null;
+  notes: string | null;
+  supplier: {
+    id: number;
+    name: string;
+    phone: string | null;
+    wechat: string | null;
+    email: string | null;
+    shop_url: string | null;
+    province: string | null;
+    city: string | null;
+    status: SupplierStatus;
+  };
 }
 
 export interface ProductProp {
@@ -338,6 +365,12 @@ export interface MediaQueryParams {
   pageSize?: number;
   aggregate_type?: MediaAggregateType;
   filename?: string;
+  directory?: string;
+}
+
+export interface MediaDirectory {
+  directory: string;
+  count: number;
 }
 
 export type AttributeType = 'text' | 'number' | 'select' | 'boolean' | 'date';
@@ -387,3 +420,86 @@ export type AttributeUpdateParams = Partial<Omit<AttributeCreateParams, 'values'
 export interface AttributeQueryParams extends ListParams {
   filterable_only?: boolean;
 }
+
+// ── Suppliers ──
+export type SupplierStatus = 'prospect' | 'active' | 'on_hold' | 'blacklisted';
+
+export interface ApiSupplier {
+  id: number;
+  name: string;
+  contact_name: string | null;
+  phone: string | null;
+  email: string | null;
+  wechat: string | null;
+  platform: string;
+  shop_url: string | null;
+  province: string | null;
+  city: string | null;
+  main_category: string | null;
+  years_on_platform: number | null;
+  repeat_rate: number | null;
+  min_order_qty: number | null;
+  certifications: string | null;
+  score: number | null;
+  status: SupplierStatus;
+  notes: string | null;
+  product_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ApiSupplierProduct {
+  product_id: number;
+  sku: string;
+  name: string;
+  status: string;
+  featured_image: string | null;
+  product_min_price: number | null;
+  is_primary: boolean;
+  offer_id: string | null;
+  offer_url: string | null;
+  supplier_sku: string | null;
+  source_price: number | null;
+  source_currency: string;
+  moq: number | null;
+  lead_time_days: number | null;
+}
+
+export interface SupplierProductList {
+  supplier_id: number;
+  supplier_name: string;
+  total: number;
+  items: ApiSupplierProduct[];
+}
+
+export interface SupplierQueryParams {
+  current?: number;
+  pageSize?: number;
+  name?: string;
+  platform?: string;
+  status?: SupplierStatus;
+  province?: string;
+  main_category?: string;
+}
+
+export interface SupplierCreateParams {
+  name: string;
+  contact_name?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  wechat?: string | null;
+  platform?: string;
+  shop_url?: string | null;
+  province?: string | null;
+  city?: string | null;
+  main_category?: string | null;
+  years_on_platform?: number | null;
+  repeat_rate?: number | null;
+  min_order_qty?: number | null;
+  certifications?: string | null;
+  score?: number | null;
+  status?: SupplierStatus;
+  notes?: string | null;
+}
+
+export type SupplierUpdateParams = Partial<SupplierCreateParams>;

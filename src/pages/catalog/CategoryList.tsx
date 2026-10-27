@@ -61,6 +61,34 @@ const findNode = (nodes: CategoryTree[], id: number): CategoryTree | undefined =
   return undefined;
 };
 
+const SHOP_BASE_URL = (import.meta.env.VITE_SHOP_BASE_URL || 'http://localhost:3003').replace(
+  /\/+$/,
+  '',
+);
+
+const findCategoryPath = (
+  nodes: CategoryTree[],
+  id: number,
+  ancestors: CategoryTree[] = [],
+): CategoryTree[] | null => {
+  for (const node of nodes) {
+    const path = [...ancestors, node];
+    if (node.id === id) return path;
+    const childPath = findCategoryPath(node.children, id, path);
+    if (childPath) return childPath;
+  }
+  return null;
+};
+
+const shopCategoryUrl = (tree: CategoryTree[], category: CategoryTree): string | null => {
+  const path = findCategoryPath(tree, category.id);
+  if (!path || path.some((node) => !node.is_active)) return null;
+  const root = path[0]?.slug;
+  const route = root === 'aquarium' ? '/aquarium' : root === 'pet-products' ? '/pet' : null;
+  if (!route) return null;
+  return `${SHOP_BASE_URL}${route}${path.length > 1 ? `?category=${encodeURIComponent(category.slug)}` : ''}`;
+};
+
 export default function CategoryList() {
   const [form] = Form.useForm<CategoryFormValues>();
   const [tree, setTree] = useState<CategoryTree[]>([]);
@@ -141,15 +169,35 @@ export default function CategoryList() {
       title: 'Category',
       dataIndex: 'name',
       width: 320,
-      render: (_, category) => (
-        <Space>
-          <Avatar shape="square" size={36} src={category.image_url} icon={<ApartmentOutlined />} />
-          <Space direction="vertical" size={0}>
-            <Typography.Text strong={!category.parent_id}>{category.name}</Typography.Text>
-            <Typography.Text type="secondary">{category.slug}</Typography.Text>
+      render: (_, category) => {
+        const shopUrl = shopCategoryUrl(tree, category);
+        return (
+          <Space>
+            <Avatar
+              shape="square"
+              size={36}
+              src={category.image_url}
+              icon={<ApartmentOutlined />}
+            />
+            <Space direction="vertical" size={0}>
+              {shopUrl ? (
+                <Typography.Link
+                  href={shopUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  strong={!category.parent_id}
+                  aria-label={`View ${category.name} in shop`}
+                >
+                  {category.name}
+                </Typography.Link>
+              ) : (
+                <Typography.Text strong={!category.parent_id}>{category.name}</Typography.Text>
+              )}
+              <Typography.Text type="secondary">{category.slug}</Typography.Text>
+            </Space>
           </Space>
-        </Space>
-      ),
+        );
+      },
     },
     {
       title: 'Active',

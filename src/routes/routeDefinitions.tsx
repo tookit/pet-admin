@@ -9,6 +9,7 @@ import {
   SafetyCertificateOutlined,
   SafetyOutlined,
   SettingOutlined,
+  ShopOutlined,
   SlidersOutlined,
   TagsOutlined,
   TeamOutlined,
@@ -18,6 +19,7 @@ import RegisterPage from '@/pages/auth/RegisterPage';
 
 const DashboardPage = lazy(() => import('@/pages/dashboard/DashboardPage'));
 const ProductList = lazy(() => import('@/pages/catalog/ProductList'));
+const SupplierList = lazy(() => import('@/pages/suppliers/SupplierList'));
 const CategoryList = lazy(() => import('@/pages/catalog/CategoryList'));
 const TagList = lazy(() => import('@/pages/catalog/TagList'));
 const QuoteList = lazy(() => import('@/pages/quotes/QuoteList'));
@@ -52,6 +54,13 @@ export const protectedRoutes = [
     icon: <AppstoreOutlined />,
     group: 'catalog',
     component: ProductList,
+  },
+  {
+    path: 'suppliers',
+    name: 'Suppliers',
+    icon: <ShopOutlined />,
+    group: 'catalog',
+    component: SupplierList,
   },
   {
     path: 'categories',

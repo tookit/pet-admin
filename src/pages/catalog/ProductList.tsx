@@ -67,6 +67,7 @@ import type {
   ApiMedia,
   ApiProduct,
   ApiProductDetail,
+  ApiProductSupplierLink,
   CategoryTree,
   PriceTier,
   ProductQueryParams,
@@ -105,6 +106,14 @@ const formatMoney = (value: number | null | undefined, currency = 'USD') =>
 
 const formatDateTime = (value: string | null) =>
   value ? value.slice(0, 16).replace('T', ' ') : '—';
+
+const SHOP_BASE_URL = (import.meta.env.VITE_SHOP_BASE_URL || 'http://localhost:3003').replace(
+  /\/+$/,
+  '',
+);
+
+const shopPreviewUrl = (product: ApiProduct) =>
+  product.slug ? `${SHOP_BASE_URL}/products/${encodeURIComponent(product.slug)}` : null;
 
 const decodeProductFilters = (search: URLSearchParams): ProductQueryParams => {
   const featured = search.get('is_featured');
@@ -370,7 +379,18 @@ export default function ProductList() {
       : '—';
   };
 
+  const primaryLink = (product: ApiProduct) =>
+    product.suppliers?.find((link) => link.is_primary) ?? product.suppliers?.[0];
+
   const columns: ProColumns<ApiProduct>[] = [
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      width: 80,
+      render: (_: unknown, product: ApiProduct) => (
+        <span className="muted-time">{product.id}</span>
+      ),
+    },
     {
       title: 'Product',
       dataIndex: 'name',
@@ -427,6 +447,37 @@ export default function ProductList() {
       ),
     },
     {
+      title: 'Supplier',
+      dataIndex: 'suppliers',
+      width: 210,
+      render: (_: unknown, product: ApiProduct) => {
+        const link = primaryLink(product);
+        if (!link) return <span className="muted-time">—</span>;
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.35 }}>
+            <span style={{ fontWeight: 500 }}>
+              {link.offer_url ? (
+                <a href={link.offer_url} target="_blank" rel="noreferrer">
+                  {link.supplier.name}
+                </a>
+              ) : (
+                link.supplier.name
+              )}
+            </span>
+            <span className="muted-time" style={{ fontSize: 12 }}>
+              {link.source_price != null
+                ? formatMoney(link.source_price, link.source_currency)
+                : '—'}
+              {link.moq ? ` · MOQ ${link.moq}` : ''}
+              {product.suppliers && product.suppliers.length > 1
+                ? ` · +${product.suppliers.length - 1} alt`
+                : ''}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
       title: 'Status',
       dataIndex: 'status',
       width: 100,
@@ -450,43 +501,58 @@ export default function ProductList() {
       key: 'actions',
       width: 160,
       fixed: 'right' as const,
-      render: (_: unknown, product: ApiProduct) => (
-        <div className="table-inline-actions" onClick={(event) => event.stopPropagation()}>
-          <Button type="link" size="small" onClick={() => openEditor(product)}>
-            Edit
-          </Button>
-          <Button type="link" size="small" onClick={() => void openDetail(product)}>
-            Preview
-          </Button>
-          <Dropdown
-            trigger={['click']}
-            menu={{
-              items: [
-                {
-                  key: 'duplicate',
-                  label: 'Duplicate',
-                  onClick: () =>
-                    void perform(
-                      () => duplicateProduct(product.id).then(() => {}),
-                      'Product duplicated',
-                    ),
-                },
-                { type: 'divider' },
-                {
-                  key: 'delete',
-                  label: 'Delete',
-                  danger: true,
-                  onClick: () => confirmDelete(product),
-                },
-              ],
-            }}
-          >
-            <Button type="link" size="small">
-              More <DownOutlined />
+      render: (_: unknown, product: ApiProduct) => {
+        const shopUrl = shopPreviewUrl(product);
+        return (
+          <div className="table-inline-actions" onClick={(event) => event.stopPropagation()}>
+            <Button type="link" size="small" onClick={() => openEditor(product)}>
+              Edit
             </Button>
-          </Dropdown>
-        </div>
-      ),
+            <Button type="link" size="small" onClick={() => void openDetail(product)}>
+              Preview
+            </Button>
+            <Dropdown
+              trigger={['click']}
+              menu={{
+                items: [
+                  {
+                    key: 'shop',
+                    label: shopUrl ? (
+                      <a href={shopUrl} target="_blank" rel="noreferrer">
+                        View in shop
+                      </a>
+                    ) : (
+                      'View in shop (no slug)'
+                    ),
+                    disabled: !shopUrl,
+                  },
+                  { type: 'divider' },
+                  {
+                    key: 'duplicate',
+                    label: 'Duplicate',
+                    onClick: () =>
+                      void perform(
+                        () => duplicateProduct(product.id).then(() => {}),
+                        'Product duplicated',
+                      ),
+                  },
+                  { type: 'divider' },
+                  {
+                    key: 'delete',
+                    label: 'Delete',
+                    danger: true,
+                    onClick: () => confirmDelete(product),
+                  },
+                ],
+              }}
+            >
+              <Button type="link" size="small">
+                More <DownOutlined />
+              </Button>
+            </Dropdown>
+          </div>
+        );
+      },
     },
   ];
 
@@ -586,7 +652,7 @@ export default function ProductList() {
             </span>,
           ]}
           headerTitle={false}
-          scroll={{ x: 1020 }}
+          scroll={{ x: 1100 }}
           defaultSize={
             settings.density === 'small'
               ? 'small'
@@ -642,6 +708,52 @@ export default function ProductList() {
       >
         {detail && (
           <Space direction="vertical" size={16} style={{ width: '100%' }}>
+            {detail.suppliers?.length ? (
+              <Card size="small" title="Sourcing & purchase order">
+                <Table<ApiProductSupplierLink>
+                  rowKey="supplier_id"
+                  size="small"
+                  pagination={false}
+                  dataSource={detail.suppliers}
+                  columns={[
+                    {
+                      title: 'Supplier',
+                      render: (_, link) => (
+                        <Space direction="vertical" size={0}>
+                          <span style={{ fontWeight: 500 }}>{link.supplier.name}</span>
+                          <span className="muted-time" style={{ fontSize: 12 }}>
+                            {[link.supplier.city, link.supplier.phone]
+                              .filter(Boolean)
+                              .join(' · ') || '—'}
+                          </span>
+                        </Space>
+                      ),
+                    },
+                    {
+                      title: 'Cost',
+                      width: 90,
+                      render: (_, link) =>
+                        link.source_price != null
+                          ? formatMoney(link.source_price, link.source_currency)
+                          : '—',
+                    },
+                    { title: 'MOQ', dataIndex: 'moq', width: 70 },
+                    {
+                      title: 'Order',
+                      width: 90,
+                      render: (_, link) =>
+                        link.offer_url ? (
+                          <a href={link.offer_url} target="_blank" rel="noreferrer">
+                            1688 ↗
+                          </a>
+                        ) : (
+                          '—'
+                        ),
+                    },
+                  ]}
+                />
+              </Card>
+            ) : null}
             <Card size="small" title="Overview">
               <ProDescriptions<ApiProductDetail>
                 column={1}

@@ -20,6 +20,7 @@ import {
   Input,
   InputNumber,
   Modal,
+  Pagination,
   Row,
   Select,
   Skeleton,
@@ -43,6 +44,7 @@ import {
 } from '@/api/modules/product.api';
 import {
   detachEntityMedia,
+  getMediaDirectories,
   getMediaList,
   mediaUrl,
   setProductFeaturedImage,
@@ -53,6 +55,7 @@ import type { CategoryTree } from '@/types/api';
 import type {
   ApiMedia,
   ApiProduct,
+  MediaDirectory,
   ApiProductDetail,
   PriceTier,
   ProductCreateParams,
@@ -171,8 +174,13 @@ export default function ProductForm({
   const [featuredImageId, setFeaturedImageId] = useState<number>();
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [libraryImages, setLibraryImages] = useState<ApiMedia[]>([]);
-  const [librarySelection, setLibrarySelection] = useState<number[]>([]);
+  const [librarySelection, setLibrarySelection] = useState<FormImage[]>([]);
   const [libraryLoading, setLibraryLoading] = useState(false);
+  const [libraryTotal, setLibraryTotal] = useState(0);
+  const [libraryPage, setLibraryPage] = useState(1);
+  const [librarySearch, setLibrarySearch] = useState('');
+  const [libraryFolder, setLibraryFolder] = useState<string>();
+  const [libraryFolders, setLibraryFolders] = useState<MediaDirectory[]>([]);
   const createdId = useRef<number | undefined>(undefined);
 
   const treeData = useMemo(() => toTreeData(categoryTree), [categoryTree]);
@@ -472,14 +480,21 @@ export default function ProductForm({
     });
   };
 
-  const openLibrary = async () => {
-    setLibrarySelection(images.map((image) => image.id));
-    setLibraryOpen(true);
-    if (libraryImages.length) return;
+  const LIBRARY_PAGE_SIZE = 24;
+
+  const loadLibrary = async (page = 1, folder?: string, search = '') => {
     setLibraryLoading(true);
     try {
-      const response = await getMediaList({ aggregate_type: 'image', pageSize: 100 });
+      const response = await getMediaList({
+        aggregate_type: 'image',
+        current: page,
+        pageSize: LIBRARY_PAGE_SIZE,
+        directory: folder,
+        filename: search.trim() || undefined,
+      });
       setLibraryImages(response.result);
+      setLibraryTotal(response.total);
+      setLibraryPage(page);
     } catch {
       void message.error('Unable to load the media library');
     } finally {
@@ -487,23 +502,33 @@ export default function ProductForm({
     }
   };
 
+  const openLibrary = () => {
+    setLibrarySelection(images);
+    setLibrarySearch('');
+    setLibraryFolder(undefined);
+    setLibraryOpen(true);
+    void loadLibrary(1, undefined, '');
+    if (!libraryFolders.length) {
+      getMediaDirectories('image')
+        .then(setLibraryFolders)
+        .catch(() => setLibraryFolders([]));
+    }
+  };
+
+  const chooseLibraryFolder = (folder?: string) => {
+    setLibraryFolder(folder);
+    void loadLibrary(1, folder, librarySearch);
+  };
+
+  const searchLibrary = (value: string) => {
+    setLibrarySearch(value);
+    void loadLibrary(1, libraryFolder, value);
+  };
+
   const applyLibrarySelection = () => {
-    const selected = libraryImages
-      .filter((media) => librarySelection.includes(media.id))
-      .map((media) => ({
-        id: media.id,
-        url: media.url,
-        filename: media.filename,
-        size: media.size,
-      }));
-    const kept = images.filter((image) => librarySelection.includes(image.id));
-    const merged = [...kept];
-    selected.forEach((image) => {
-      if (!merged.some((item) => item.id === image.id)) merged.push(image);
-    });
-    setImages(merged);
-    if (!merged.some((image) => image.id === featuredImageId)) {
-      setFeaturedImageId(merged[0]?.id);
+    setImages(librarySelection);
+    if (!librarySelection.some((image) => image.id === featuredImageId)) {
+      setFeaturedImageId(librarySelection[0]?.id);
     }
     setLibraryOpen(false);
   };
@@ -884,7 +909,7 @@ export default function ProductForm({
             <Button
               type="text"
               icon={<UploadOutlined />}
-              onClick={() => void openLibrary()}
+              onClick={openLibrary}
               className="product-library-trigger"
             >
               Choose from media library
@@ -982,12 +1007,31 @@ export default function ProductForm({
         onCancel={() => setLibraryOpen(false)}
         destroyOnClose
       >
+        <div className="product-library-toolbar">
+          <Select
+            placeholder="All folders"
+            allowClear
+            value={libraryFolder}
+            onChange={chooseLibraryFolder}
+            options={libraryFolders.map((folder) => ({
+              value: folder.directory,
+              label: `${folder.directory} (${folder.count})`,
+            }))}
+            style={{ minWidth: 180 }}
+          />
+          <Input.Search
+            placeholder="Search filenames"
+            allowClear
+            onSearch={searchLibrary}
+            style={{ flex: 1 }}
+          />
+        </div>
         {libraryLoading ? (
           <Skeleton active paragraph={{ rows: 6 }} />
         ) : libraryImages.length ? (
           <div className="product-library-grid">
             {libraryImages.map((media) => {
-              const selected = librarySelection.includes(media.id);
+              const selected = librarySelection.some((image) => image.id === media.id);
               return (
                 <label
                   key={media.id}
@@ -998,8 +1042,16 @@ export default function ProductForm({
                     onChange={(event) =>
                       setLibrarySelection((current) =>
                         event.target.checked
-                          ? [...current, media.id]
-                          : current.filter((id) => id !== media.id),
+                          ? [
+                              ...current,
+                              {
+                                id: media.id,
+                                url: media.url,
+                                filename: media.filename,
+                                size: media.size,
+                              },
+                            ]
+                          : current.filter((image) => image.id !== media.id),
                       )
                     }
                   />
@@ -1010,7 +1062,17 @@ export default function ProductForm({
             })}
           </div>
         ) : (
-          <Empty description="No images in the media library yet." />
+          <Empty description="No images match this view." />
+        )}
+        {libraryTotal > LIBRARY_PAGE_SIZE && (
+          <Pagination
+            className="product-library-pagination"
+            current={libraryPage}
+            pageSize={LIBRARY_PAGE_SIZE}
+            total={libraryTotal}
+            showSizeChanger={false}
+            onChange={(page) => void loadLibrary(page, libraryFolder, librarySearch)}
+          />
         )}
       </Modal>
     </Drawer>
